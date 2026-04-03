@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Singularity AGI Full-Stack AI App Builder - Technical Architecture 2026</title>
+<style>.container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 24px 40px;
+    background-color: #fff;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+    }
+.chart-container {
+    position: relative;
+    margin: 3em auto;
+    max-width: 700px;
+    min-height: 200px;
+    max-height: 400px;
+    width: 100%;
+    height: auto;
+    overflow: visible;
+    }
+img {
+    display: block;
+    overflow: hidden;
+    max-width: 100%;
+    max-height: 280px;
+    margin: 1em auto;
+    border-radius: 8px;
+    }
+h1 {
+    font-size: 28px;
+    margin-top: 24px;
+    margin-bottom: 20px;
+    }
+h4 {
+    font-size: 18px;
+    }
+h5 {
+    font-size: 16px;
+    }
+:root {
+    --primary: #0070f3;
+    --secondary: #00dfd8;
+    --bg: #0a0a0a;
+    --surface: #1a1a1a;
+    --text: #ededed;
+    --muted: #a1a1a1;
+    --code-bg: #111;
+    --border: #333;
+    }
+body {
+    font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.6;
+    color: var(--text);
+    background-color: var(--bg);
+    margin: 0 24px 0 24px;
+    padding: 0;
+    font-size: 16px;
+    max-width: None;
+    }
+header {
+    padding: 4rem 2rem;
+    text-align: center;
+    background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
+    border-bottom: 1px solid var(--border);
+    }
+header h1 {
+    font-size: 3rem;
+    margin: 0;
+    background: linear-gradient(to right, var(--primary), var(--secondary));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    }
+header p {
+    color: var(--muted);
+    font-size: 1.2rem;
+    max-width: 800px;
+    margin: 1rem auto;
+    }
+main {
+    max-width: 1000px;
+    margin: 2rem auto;
+    padding: 0 2rem;
+    }
+section {
+    margin-bottom: 4rem;
+    }
+h2 {
+    font-size: 22px;
+    border-left: 4px solid var(--primary);
+    padding-left: 1rem;
+    margin-bottom: 1.5rem;
+    color: #fff;
+    }
+h3 {
+    font-size: 20px;
+    color: var(--secondary);
+    margin-top: 2rem;
+    }
+p {
+    margin-bottom: 1rem;
+    text-align: justify;
+    }
+ul, ol {
+    margin-bottom: 1.5rem;
+    padding-left: 1.5rem;
+    }
+li {
+    margin-bottom: 0.5rem;
+    }
+pre {
+    background-color: var(--code-bg);
+    border: 1px solid var(--border);
+    padding: 1.5rem;
+    border-radius: 8px;
+    overflow-x: auto;
+    font-family: "Fira Code", "Courier New", monospace;
+    font-size: 0.9rem;
+    line-height: 1.4;
+    color: #dcdcdc;
+    }
+code {
+    color: var(--secondary);
+    background: rgba(0, 223, 216, 0.1);
+    padding: 0.2rem 0.4rem;
+    border-radius: 4px;
+    }
+.diagram {
+    background: #111;
+    border: 1px solid var(--border);
+    padding: 2rem;
+    border-radius: 12px;
+    text-align: center;
+    margin: 2rem 0;
+    font-family: monospace;
+    white-space: pre;
+    color: var(--secondary);
+    }
+.tech-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+    margin: 2rem 0;
+    }
+.tech-card {
+    background: var(--surface);
+    padding: 1.5rem;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    text-align: center;
+    }
+.tech-card strong {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: var(--primary);
+    }
+footer {
+    text-align: center;
+    padding: 4rem 2rem;
+    border-top: 1px solid var(--border);
+    color: var(--muted);
+    font-size: 0.9rem;
+    }
+@media only screen and (max-device-width: 768px) {
+            body {
+                padding: 0;
+                margin: 0;
+                font-family: PingFang SC;
+                font-size: 15px;
+                line-height: 1.5;
+            }
+
+            .container {
+                padding: 0;
+                margin: 16px 20px 30px;
+                box-shadow: none;
+            }
+
+            h1,
+            h2,
+            h3,
+            h4 {
+                font-family: PingFang SC;
+            }
+
+            h1 {
+                font-size: 1.87em;
+                line-height: 1.6;
+                margin-bottom: 0.5em;
+                text-align: center;
+            }
+
+            h2 {
+                font-size: 1.6em;
+                font-weight: 600;
+                margin-top: 1.3em;
+                margin-bottom: 0.8em;
+                border-bottom: 1px solid #eee;
+                padding-bottom: 0.5em;
+            }
+
+            h3 {
+                font-size: 1.2em;
+                font-weight: 600;
+                margin-top: 1em;
+                margin-bottom: 0.6em;
+            }
+
+            h4 {
+                font-size: 1.1em;
+                font-weight: 500;
+                margin-top: 1em;
+                margin-bottom: 0.5em;
+                font-style: normal;
+            }
+
+            h5 {
+                font-size: 1em;
+                font-weight: 500;
+                margin-bottom: 1.2em;
+            }
+
+            ul,
+            ol {
+                font-size: 1em; /* Equivalent to 17.6px if base is 16px */
+                font-weight: 400;
+                margin-bottom: 1.2em;
+                line-height: 1.8;
+            }
+
+            p {
+                font-size: 1em;
+                line-height: 1.8; /* Equivalent to 17.6px if base is 16px */
+                font-weight: 400;
+                margin-top: 0.8em;
+                margin-bottom: 0.8em;
+            }
+
+            blockquote {
+                padding: 1em 1.2em;
+
+            p {
+                margin: 0;
+            }
+        }
+
+        figcaption {
+            margin-top: 0.5em;
+            font-size: 0.8em; /* Equivalent to 17.6px if base is 16px */
+            font-weight: 400;
+            text-align: center;
+            font-style: normal;
+            color: #7F8896;
+        }
+
+        img {
+            display: block;
+            overflow: hidden;
+            max-width: 100%;
+            max-height: 335px;
+            margin: 1em auto;
+            border-radius: 8px;
+        }
+        }</style>
+</head>
+<body><div class="container">
+<header>
+<h1 id="section-1">Singularity AGI App Builder</h1>
+<p>Technical Architecture and Blueprint for Autonomous, Zero-Cost Full-Stack Development</p>
+<p><em>Document Version: 2026.04.03-ALPHA</em></p>
+</header>
+<section id="introduction">
+<p>The Singularity AGI App Builder represents the pinnacle of agentic development in 2026. By leveraging a symbiotic ecosystem of free-tier infrastructure and cutting-edge LLMs, it enables the generation, orchestration, and deployment of complex software without capital expenditure.</p>
+</section>
+<section id="stack">
+<h2 id="section-1">1. The 2026 Free AI Stack</h2>
+<p>The architecture utilizes a distributed model approach, optimizing for the specific strengths of each provider's free tier as of April 2026.</p>
+<div class="tech-grid">
+<div class="tech-card">
+<strong>OpenRouter</strong>
+                Meta Llama 4 / Mistral NeMo 2<br/>Long-form Reasoning
+            </div>
+<div class="tech-card">
+<strong>Groq LPU</strong>
+                Instant Code Refactoring<br/>Sub-100ms Latency
+            </div>
+<div class="tech-card">
+<strong>Gemini 2.0 Flash</strong>
+                2M Context Window<br/>Project-wide Analysis
+            </div>
+<div class="tech-card">
+<strong>Supabase</strong>
+                PostgreSQL, Auth, Edge Functions<br/>Serverless Backend
+            </div>
+<div class="tech-card">
+<strong>Netlify</strong>
+                Next.js 16 / Nuxt 4 Hosting<br/>Edge CDN Deployment
+            </div>
+</div>
+<h3 id="section-1-1">Component Roles:</h3>
+<ul>
+<li><strong>The Brain (OpenRouter):</strong> Acts as the primary architect. It utilizes high-intelligence models (Llama 4 70B) for high-level system design and logic definition.</li>
+<li><strong>The Speed (Groq):</strong> Handles granular code generation tasks, unit test creation, and real-time syntax checking where speed is critical for the "Flow State" of the agent.</li>
+<li><strong>The Memory (Gemini):</strong> With its massive 2-million token context window, Gemini ingests the entire codebase and documentation to ensure cross-file consistency and architecture adherence.</li>
+<li><strong>The Foundation (Supabase &amp; Netlify):</strong> Provides the production-ready environment. Supabase offers a managed Postgres database and real-time capabilities, while Netlify handles front-end builds and automated CI/CD pipelines.</li>
+</ul>
+</section>
+<section id="rotation">
+<h2 id="section-2">2. 'Smart Rotation' Logic</h2>
+<p>To bypass the constraints of free-tier Rate Limits (RPM/TPM), the system implements a "Virtual Global Provider" layer. This layer manages a pool of API keys and dynamically routes requests based on real-time telemetry.</p>
+<div class="diagram">
+[Request Dispatcher]
+      |
+      |---&gt; [Health Monitor] &lt;--- (Telemetry: Rate Limits, Latency, Errors)
+      |
+      |---&gt; [Smart Router]
+             |
+             |--- Pool A: Groq (High Speed, Low TPM)
+             |--- Pool B: OpenRouter (High Logic, Variable Latency)
+             |--- Pool C: Gemini (High Context, Medium RPM)
+        </div>
+<h3 id="section-2-1">Pseudo-code: SmartRotation Engine</h3>
+<pre><code>class SmartRotationManager {
+  private pools = {
+    "groq": { keys: [...], rpm: 30, currentUsage: 0 },
+    "openrouter": { keys: [...], tpm: 100000, currentUsage: 0 },
+    "gemini": { keys: [...], rpm: 15, currentUsage: 0 }
+  };
+
+  async executeTask(taskType, payload) {
+    const provider = this.selectBestProvider(taskType);
+    try {
+      const response = await provider.call(payload);
+      this.updateTelemetry(provider.id, response.headers);
+      return response;
+    } catch (err) {
+      if (err.status === 429) {
+        this.markProviderCoolDown(provider.id);
+        return this.executeTask(taskType, payload); // Recursive retry on next best
+      }
+    }
+  }
+
+  selectBestProvider(taskType) {
+    // Logic: If 'refactor' -&gt; Groq; If 'architecture' -&gt; OpenRouter; 
+    // If 'whole-repo-scan' -&gt; Gemini
+    return this.getAvailableProviderFromPool(taskType);
+  }
+}</code></pre>
+<p>The logic tracks <code>X-RateLimit-Remaining</code> headers to proactively switch keys before a 429 error occurs, ensuring a continuous development flow.</p>
+</section>
+<section id="orchestration">
+<h2 id="section-3">3. Full-Stack Orchestration Workflow</h2>
+<p>The system follows a non-linear, agentic workflow where "The Architect" oversees specialized sub-agents.</p>
+<ol>
+<li><strong>Requirements Phase:</strong> Gemini 2.0 processes natural language input, generates a PRD (Product Requirements Document), and creates a structural "Tree Map" of the desired application.</li>
+<li><strong>Planning Phase:</strong> OpenRouter (Llama 4) designs the Supabase schema, API endpoints, and component hierarchy. It outputs a <code>system_blueprint.json</code>.</li>
+<li><strong>Code Generation Phase:</strong>
+<ul>
+<li><strong>Backend:</strong> Groq generates Supabase Edge Functions and SQL migrations.</li>
+<li><strong>Frontend:</strong> Groq/OpenRouter parallel-process React/Next.js components based on the blueprint.</li>
+</ul>
+</li>
+<li><strong>Validation Phase:</strong> A dedicated "Reviewer" agent runs the code through a virtualized linter. If errors are found, the 'Smart Rotation' logic picks a different model to attempt a fix, preventing "Model Hallucination Loops."</li>
+</ol>
+</section>
+<section id="deployment">
+<h2 id="section-4">4. Automated Deployment Strategy</h2>
+<p>The Singularity Builder manages the entire lifecycle from local generation to global distribution using CLI automation and GitHub Actions.</p>
+<h3 id="section-4-1">CI/CD Pipeline Architecture:</h3>
+<pre><code># .github/workflows/singularity-deploy.yml
+name: Autonomous Deployment
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Supabase
+        run: npx supabase login --token ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        
+      - name: Deploy Database &amp; Edge Functions
+        run: npx supabase db push &amp;&amp; npx supabase functions deploy
+
+      - name: Deploy Frontend to Netlify
+        uses: netlify/actions/cli@master
+        with:
+          args: deploy --build --prod
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+</code></pre>
+<p>The builder dynamically injects these configuration files into the generated repository. It uses the <strong>Netlify CLI</strong> for atomic deployments, ensuring that if a build fails, the previous version remains live.</p>
+</section>
+<section id="security">
+<h2 id="section-5">5. Security and Secret Management</h2>
+<p>Handling multiple free-tier API keys requires a robust security posture to prevent leaks and unauthorized usage.</p>
+<h3 id="section-5-1">The "Vault-and-Proxy" Pattern:</h3>
+<ul>
+<li><strong>Secret Injection:</strong> API keys are never stored in code. They are injected into the Builder via environment variables (<code>.env.local</code>) and synced to GitHub Actions Secrets using the GitHub CLI (<code>gh secret set</code>).</li>
+<li><strong>Encrypted Key Rotation:</strong> If the builder is hosted, it uses <strong>AES-256-GCM</strong> to encrypt keys at rest within the Supabase Vault.</li>
+<li><strong>Scoped Access:</strong> The builder creates "Limited Service Roles" in Supabase. This ensures that the generated app only has access to its own data, while the Builder's administrative keys remain isolated.</li>
+<li><strong>Rate Limiting (Self-Imposed):</strong> To prevent being flagged for "API Farming," the builder implements jitter (randomized delays) between requests, mimicking human development patterns.</li>
+</ul>
+<h3 id="section-5-2">Secret Management Workflow:</h3>
+<pre><code>1. Developer provides keys (OpenRouter, Groq, etc.) via a secure UI.
+2. Builder encrypts keys and stores them in Supabase Vault.
+3. During Orchestration, the 'Smart Rotation' engine decodes keys in-memory.
+4. For the generated app, the Builder generates a unique 'SUPABASE_ANON_KEY' 
+   and 'NEXT_PUBLIC_...' variables for Netlify.</code></pre>
+</section>
+<footer>
+<p>© 2026 Singularity AGI Systems. Designed for the Era of Autonomous Engineering.</p>
+</footer>
+</div></body>
+</html>
