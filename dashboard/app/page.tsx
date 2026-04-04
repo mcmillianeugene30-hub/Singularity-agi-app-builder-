@@ -17,10 +17,11 @@ export default function SingularityDashboard() {
     setIsBuilding(true);
     setLogs(["[*] Initializing WebSocket connection..."]);
 
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "ws://localhost:8000";
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
     const wsUrl = apiUrl.replace(/^http/, "ws") + "/ws/build";
 
     try {
+      setLogs(prev => [...prev, `[*] Connecting to: ${wsUrl}`]);
       const socket = new WebSocket(wsUrl);
 
       socket.onopen = () => {
@@ -38,6 +39,7 @@ export default function SingularityDashboard() {
 
       socket.onerror = (error) => {
         setLogs(prev => [...prev, "[!] WebSocket error occurred. Is the backend running?"]);
+        setLogs(prev => [...prev, `[!] URL: ${wsUrl}`]);
         setIsBuilding(false);
       };
 
@@ -47,6 +49,8 @@ export default function SingularityDashboard() {
       };
     } catch (error) {
       setLogs(prev => [...prev, "[!] Failed to connect to WebSocket. Make sure the backend is running."]);
+      setLogs(prev => [...prev, `[!] Error: ${error instanceof Error ? error.message : 'Unknown error'}`]);
+      setLogs(prev => [...prev, `[!] URL: ${wsUrl}`]);
       setIsBuilding(false);
     }
   };

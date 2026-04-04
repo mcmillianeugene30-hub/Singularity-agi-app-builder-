@@ -1,197 +1,569 @@
-# 🚀 Netlify Deployment Guide
+# 🚀 Production Deployment Guide: Render + Netlify
 
-## Overview
-This guide explains how to deploy the Singularity AGI App Builder to Netlify.
+This guide explains how to deploy the Singularity AGI App Builder in production using a split architecture:
 
-## Architecture
+- **Backend**: FastAPI WebSocket server on Render (supports WebSockets, free tier)
+- **Frontend**: Next.js dashboard on Netlify (static hosting)
 
-### Frontend Dashboard (Next.js)
-- **Technology**: Next.js 14 with TypeScript and Tailwind CSS
-- **Deployment**: Static export (Netlify Pages)
-- **Location**: `/dashboard` directory
+## Architecture Overview
 
-### Backend API (FastAPI with WebSocket)
-- **Technology**: Python FastAPI with Uvicorn
-- **Note**: Cannot be deployed to Netlify (requires a server)
-- **Recommended**: Deploy to Railway, Render, or Vercel (with serverless functions)
+```
+┌─────────────────────────┐
+│   Netlify (Frontend)    │
+│   - Next.js Dashboard   │
+│   - Static Files        │
+│   - WebSocket Client    │
+└──────────┬──────────────┘
+           │
+           │ WebSocket (wss://)
+           │
+┌──────────▼──────────────┐
+│   Render (Backend)      │
+│   - FastAPI Server      │
+│   - WebSocket Handler   │
+│   - AI Integration      │
+│   - Build Pipeline      │
+└─────────────────────────┘
+```
 
-## Deployment Options
+## Prerequisites
 
-### Option 1: Deploy Frontend Only (Quick Start)
+- GitHub account with repository access
+- Render account (free tier available at [render.com](https://render.com))
+- Netlify account (free tier available at [netlify.com))
+- AI API keys (OpenRouter, Groq, Gemini)
+- GitHub Personal Access Token (with `repo` scope)
+- Netlify Personal Access Token (with `deploy` scope)
 
-1. **Prepare the Dashboard**
+---
+
+## Part 1: Deploy Backend to Render
+
+### Step 1: Prepare GitHub Repository
+
+Ensure your code is pushed to GitHub with all the deployment files:
+
+```bash
+git add .
+git commit -m "Add Render deployment configuration"
+git push origin main
+```
+
+### Step 2: Deploy to Render
+
+1. **Sign up/login to [Render](https://dashboard.render.com)**
+
+2. **Create a new Web Service**:
+   - Click "New" → "Web Service"
+   - Connect your GitHub repository
+   - Select the repository
+
+3. **Configure the Service**:
+   - **Name**: `singularity-agi-backend`
+   - **Region**: Choose nearest region
+   - **Branch**: `main`
+   - **Runtime**: `Python 3`
+   - **Build Command**: `pip install -r requirements.txt`
+   - **Start Command**: `uvicorn api:app --host 0.0.0.0 --port $PORT`
+
+4. **Set Environment Variables** (in the "Advanced" section):
+   ```
+   OPENROUTER_API_KEY=your_openrouter_key
+   GROQ_API_KEY=your_groq_key
+   GEMINI_API_KEY=your_gemini_key
+   GITHUB_TOKEN=your_github_pat
+   NETLIFY_TOKEN=your_netlify_token
+   ```
+
+5. **Click "Deploy Web Service"**
+
+### Step 3: Verify Backend Deployment
+
+1. Render will deploy your service (typically takes 2-5 minutes)
+2. Once deployed, you'll get a URL like: `https://singularity-agi-backend.onrender.com`
+3. Test the health endpoint:
+   ```bash
+   curl https://singularity-agi-backend.onrender.com/health
+   ```
+   Should return: `{"status":"healthy","service":"singularity-agi-backend"}`
+
+### Step 4: Verify WebSocket Support
+
+Render's free tier supports WebSockets. To test:
+
+```bash
+# Using wscat (install with: npm install -g wscat)
+wscat -c https://singularity-agi-backend.onrender.com/ws/build
+```
+
+### Important Render Notes
+
+- **Free Tier Limitations**:
+  - Web services sleep after 15 minutes of inactivity
+  - Cold starts take 30-60 seconds
+  - 512MB RAM limit
+  - 512 hours/month free
+
+- **WebSocket Support**:
+  - Render supports WebSocket connections on the free tier
+  - No additional configuration needed
+  - Automatically handles upgrade requests
+
+- **Environment Variables**:
+  - Never commit `.env` files
+  - Always use Render's dashboard for sensitive data
+  - Variables are encrypted at rest
+
+---
+
+## Part 2: Deploy Frontend to Netlify
+
+### Step 1: Update Dashboard Configuration
+
+1. **Create environment variable file** (local):
    ```bash
    cd dashboard
-   npm install
-   npm run build
+   cp .env.local.example .env.local
    ```
 
-2. **Connect to Netlify**
-   - Go to [app.netlify.com](https://app.netlify.com)
-   - Click "Add new site" → "Deploy manually"
-   - Upload the `/dashboard/out` folder or connect your GitHub repository
-
-3. **Configure Netlify**
-   - Build command: `cd dashboard && npm install && npm run build`
-   - Publish directory: `dashboard/out`
-
-4. **Important Notes**:
-   - The dashboard will deploy but **won't work** without the backend
-   - WebSocket connections require a running backend server
-   - Use this option for UI testing only
-
-### Option 2: Full Deployment (Recommended)
-
-#### Step 1: Deploy Backend to Railway/Render
-
-**Using Railway:**
-1. Create a `Procfile` in project root:
-   ```text
-   web: uvicorn api:app --host 0.0.0.0 --port $PORT
+2. **Edit `.env.local`** with your Render backend URL:
+   ```env
+   NEXT_PUBLIC_API_URL=https://singularity-agi-backend.onrender.com
    ```
-2. Create a `requirements.txt`:
-   ```text
-   fastapi
-   uvicorn
-   requests
-   python-dotenv
-   pydantic
-   ```
-3. Push to GitHub and connect to Railway
-4. Add environment variables in Railway dashboard:
-     - `OPENROUTER_API_KEY`
-     - `GROQ_API_KEY`
-     - `GEMINI_API_KEY`
-     - `GITHUB_TOKEN`
-     - `NETLIFY_TOKEN`
 
-**Using Render:**
-1. Create a new Web Service
-2. Connect your GitHub repository
-3. Set:
-   - Build Command: `pip install -r requirements.txt`
-   - Start Command: `uvicorn api:app --host 0.0.0.0 --port $PORT`
-   - Environment Variables: Same as above
+### Step 2: Deploy to Netlify
 
-#### Step 2: Deploy Frontend to Netlify
+**Option A: Deploy via Netlify Dashboard**
 
-1. **Update Environment Variable**
-   - In `dashboard/.env.production`:
-     ```env
-     NEXT_PUBLIC_API_URL=https://your-backend-url.railway.app
-     ```
-   - Replace with your actual backend URL
+1. Go to [app.netlify.com](https://app.netlify.com)
+2. Click "Add new site" → "Import an existing project"
+3. Connect your GitHub repository
+4. Configure build settings:
+   - **Build command**: `cd dashboard && npm install && npm run build`
+   - **Publish directory**: `dashboard/out`
+   - **Branch**: `main`
+5. Add environment variable:
+   - **Key**: `NEXT_PUBLIC_API_URL`
+   - **Value**: `https://singularity-agi-backend.onrender.com`
+6. Click "Deploy site"
 
-2. **Deploy to Netlify**
-   - Connect your GitHub repository
-   - Configure build settings (see `netlify.toml`)
-   - Add environment variable: `NEXT_PUBLIC_API_URL`
+**Option B: Deploy via Netlify CLI**
 
-3. **Test the Deployment**
-   - Open your Netlify URL
-   - Verify you can connect to the backend
-   - Test a simple build command
+```bash
+# Install Netlify CLI
+npm install -g netlify-cli
 
-### Option 3: Serverless Deployment (Advanced)
+# Login
+netlify login
 
-Convert the backend to serverless functions and deploy both on Vercel or use Netlify Functions.
+# Initialize
+netlify init
 
-## Environment Variables
-
-### Required for Backend:
-```env
-OPENROUTER_API_KEY=your_key_here
-GROQ_API_KEY=your_key_here
-GEMINI_API_KEY=your_key_here
-GITHUB_TOKEN=your_github_token_here
-NETLIFY_TOKEN=your_netlify_token_here
+# Deploy
+netlify deploy --prod
 ```
 
-### Required for Frontend:
-```env
-NEXT_PUBLIC_API_URL=https://your-backend-url.com
+### Step 3: Verify Frontend Deployment
+
+1. Netlify will deploy in 1-2 minutes
+2. You'll get a URL like: `https://singularity-agi-dashboard.netlify.app`
+3. Open the URL and verify:
+   - Dashboard loads correctly
+   - No console errors
+   - "System Online" indicator shows green
+
+### Step 4: Test Backend Connection
+
+1. In the dashboard, enter a simple prompt like: "Build a todo app"
+2. Click "Launch App"
+3. Watch the logs for:
+   - `[*] Connecting to: wss://singularity-agi-backend.onrender.com/ws/build`
+   - `[+] WebSocket connected. Sending build request...`
+   - Build progress messages
+
+---
+
+## Part 3: Connecting the Two
+
+### CORS Configuration
+
+The backend (`api.py`) already has CORS configured:
+
+```python
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # In production, limit to your Netlify domain
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 ```
 
-## Troubleshooting
+For production, you can restrict this to your Netlify domain:
 
-### WebSocket Connection Issues
+```python
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["https://singularity-agi-dashboard.netlify.app"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+```
 
-**Problem**: Dashboard shows "WebSocket error occurred"
+### WebSocket URL Handling
+
+The dashboard automatically converts HTTP to WS:
+
+```typescript
+const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const wsUrl = apiUrl.replace(/^http/, "ws") + "/ws/build";
+```
+
+This means:
+- `http://localhost:8000` → `ws://localhost:8000/ws/build`
+- `https://singularity-agi-backend.onrender.com` → `wss://singularity-agi-backend.onrender.com/ws/build`
+
+---
+
+## Part 4: Environment Variables Setup
+
+### Backend (Render)
+
+Set these in Render's "Environment" tab:
+
+| Variable | Description | Where to Get |
+|----------|-------------|--------------|
+| `OPENROUTER_API_KEY` | OpenRouter API key | [openrouter.ai/keys](https://openrouter.ai/keys) |
+| `GROQ_API_KEY` | Groq API key | [console.groq.com](https://console.groq.com) |
+| `GEMINI_API_KEY` | Google Gemini API key | [makersuite.google.com](https://makersuite.google.com) |
+| `GITHUB_TOKEN` | GitHub Personal Access Token | GitHub Settings → Developer Settings → Personal Access Tokens |
+| `NETLIFY_TOKEN` | Netlify Personal Access Token | Netlify User Settings → Applications → Personal Access Tokens |
+
+### Frontend (Netlify)
+
+Set this in Netlify's "Site Settings" → "Environment Variables":
+
+| Variable | Description | Example Value |
+|----------|-------------|---------------|
+| `NEXT_PUBLIC_API_URL` | Backend API URL | `https://singularity-agi-backend.onrender.com` |
+
+---
+
+## Part 5: Troubleshooting
+
+### Backend Issues (Render)
+
+**Problem**: Service won't start
 
 **Solutions**:
-1. Verify backend is running and accessible
-2. Check CORS settings in `api.py`
-3. Ensure `NEXT_PUBLIC_API_URL` is set correctly
-4. Check firewall/security settings on backend server
+1. Check Render build logs
+2. Verify `requirements.txt` exists and is complete
+3. Ensure start command is: `uvicorn api:app --host 0.0.0.0 --port $PORT`
+4. Verify all environment variables are set
 
-### Build Errors
+**Problem**: Health check failing
 
-**Problem**: Next.js build fails on Netlify
+**Solutions**:
+1. Verify `/health` endpoint exists in `api.py`
+2. Check if port binding is correct (`0.0.0.0` not `127.0.0.1`)
+3. Review service logs for errors
+
+**Problem**: WebSocket connections fail
+
+**Solutions**:
+1. Verify Render supports WebSocket (free tier does)
+2. Check CORS settings allow your Netlify domain
+3. Test WebSocket manually with `wscat`
+4. Verify no firewall blocking
+
+### Frontend Issues (Netlify)
+
+**Problem**: Build fails
 
 **Solutions**:
 1. Check Node version (should be 18+)
 2. Verify `next.config.js` has `output: 'export'`
 3. Ensure all dependencies are in `package.json`
-4. Check build logs in Netlify dashboard
+4. Review Netlify build logs
 
-### API Key Issues
-
-**Problem**: 401 or 403 errors when building apps
+**Problem**: Can't connect to backend
 
 **Solutions**:
-1. Verify all API keys are set in backend environment
-2. Check API key validity and limits
-3. Ensure tokens have proper scopes (GitHub: `repo`, Netlify: `deploy`)
-4. Check Smart Router rotation logic in `smart_router.py`
+1. Verify `NEXT_PUBLIC_API_URL` is set correctly in Netlify
+2. Check browser console for errors
+3. Test backend directly: `curl https://your-backend-url.onrender.com/health`
+4. Verify CORS allows your Netlify domain
 
-## Monitoring
+**Problem**: WebSocket errors in logs
 
-### Backend Monitoring
-- Check Railway/Render logs for API errors
-- Monitor rate limit usage across AI providers
-- Watch for WebSocket connection issues
+**Solutions**:
+1. Check the connection URL in logs
+2. Verify backend is running (not sleeping)
+3. Test WebSocket manually
+4. Check if HTTPS/WSS is being used (required for production)
 
-### Frontend Monitoring
-- Use Netlify Analytics for traffic
-- Check browser console for client-side errors
-- Monitor build logs in Netlify dashboard
+### Common Issues
 
-## Security Considerations
+**Problem**: "Backend is sleeping" errors
 
-1. **Never commit `.env` files** - use `.env.example` as template
-2. **Rotate API keys regularly** - especially if deploying to public repos
-3. **Use environment-specific configs** - `.env.development`, `.env.production`
-4. **Enable HTTPS** - required for WebSocket in production
-5. **Implement rate limiting** - protect your AI provider quotas
-6. **Secure WebSocket connections** - use WSS (WebSocket Secure)
+**Solutions**:
+1. Render free tier services sleep after 15 minutes of inactivity
+2. First request will take 30-60 seconds to wake up
+3. Consider upgrading to paid tier for always-on service
 
-## Cost Estimation
+**Problem**: Rate limits on AI providers
 
-### Free Tier Limits (Current Setup):
-- OpenRouter: Limited free credits
-- Groq: Limited requests per day
-- Gemini: Limited tokens per day
-- Railway: $5 free credit per month
-- Netlify: Free for static sites
+**Solutions**:
+1. Monitor Smart Router rotation in logs
+2. Check API key limits in each provider dashboard
+3. Implement request queuing or upgrade to paid plans
 
-### Potential Costs:
+**Problem**: Deployment tokens invalid
+
+**Solutions**:
+1. Regenerate tokens in provider dashboards
+2. Ensure tokens have correct scopes:
+   - GitHub: `repo` scope
+   - Netlify: `deploy` scope
+3. Update environment variables in Render
+
+---
+
+## Part 6: Monitoring and Maintenance
+
+### Backend Monitoring (Render)
+
+1. **Access Logs**:
+   - Go to your service in Render dashboard
+   - Click "Logs" tab
+   - Filter by: "Server", "Build", or specific dates
+
+2. **Health Checks**:
+   - Render automatically checks `/health` endpoint
+   - Configure custom health check in service settings
+   - Get email alerts on service failures
+
+3. **Metrics**:
+   - Monitor CPU usage, memory, response times
+   - Check WebSocket connection count
+   - Track build success rates
+
+### Frontend Monitoring (Netlify)
+
+1. **Build Logs**:
+   - Go to "Deploys" tab in Netlify dashboard
+   - View detailed build output
+   - Download logs for analysis
+
+2. **Analytics**:
+   - Enable Netlify Analytics for traffic insights
+   - Monitor page views, unique visitors
+   - Track build success rates
+
+3. **Functions**:
+   - Monitor edge function usage
+   - Check execution times
+   - Review error rates
+
+---
+
+## Part 7: Security Best Practices
+
+### Backend Security
+
+1. **Environment Variables**:
+   - Never commit `.env` files
+   - Use Render's encrypted storage
+   - Rotate keys regularly
+
+2. **CORS**:
+   - Restrict to your Netlify domain
+   - Disable `allow_origins=["*"]` in production
+
+3. **Rate Limiting**:
+   - Implement rate limiting on `/ws/build` endpoint
+   - Consider using `slowapi` for FastAPI rate limiting
+
+4. **Authentication**:
+   - Add API key authentication for build requests
+   - Implement JWT tokens for user sessions
+
+### Frontend Security
+
+1. **HTTPS**:
+   - Netlify automatically provides HTTPS
+   - Redirect all HTTP to HTTPS
+
+2. **Headers**:
+   - Already configured in `netlify.toml`
+   - `X-Frame-Options: DENY`
+   - `X-Content-Type-Options: nosniff`
+   - `X-XSS-Protection: 1; mode=block`
+
+3. **Environment Variables**:
+   - Use `NEXT_PUBLIC_` prefix for client-side variables
+   - Never expose sensitive data in client-side code
+
+---
+
+## Part 8: Cost Estimation
+
+### Render (Backend)
+
+| Plan | Cost | Features |
+|------|------|----------|
+| Free | $0/month | 512MB RAM, 0.1 CPU, 512 hours/month |
+| Starter | $7/month | 512MB RAM, 0.5 CPU, Always-on |
+| Standard | $25/month | 2GB RAM, 1 CPU, Always-on |
+
+### Netlify (Frontend)
+
+| Plan | Cost | Features |
+|------|------|----------|
+| Free | $0/month | 100GB bandwidth, 300 build minutes |
+| Pro | $19/month | 400GB bandwidth, 1000 build minutes |
+| Business | $99/month | 1000GB bandwidth, Unlimited builds |
+
+### AI Provider Costs
+
+| Provider | Free Tier | Paid Tier |
+|----------|-----------|-----------|
+| OpenRouter | Limited credits | $5/1M tokens |
+| Groq | Limited requests/day | $0.59/1M tokens |
+| Gemini | Limited tokens/day | Variable pricing |
+
+### Total Estimated Cost
+
+**Free Tier Setup**:
+- Backend: $0 (Render free)
+- Frontend: $0 (Netlify free)
+- AI Providers: $0-50/month (depending on usage)
+
+**Production Setup**:
+- Backend: $7/month (Render Starter)
+- Frontend: $19/month (Netlify Pro)
+- AI Providers: $50-200/month (depending on usage)
+
+---
+
+## Part 9: Scaling Strategy
+
+### When to Upgrade
+
+**Signs you need to upgrade**:
+- Frequent build failures due to timeouts
+- Backend sleeping causing poor UX
 - Exceeding free tier limits on AI providers
-- Backend hosting (if free tier exceeded)
-- Custom domain names
+- High traffic requiring more resources
+
+### Scaling Options
+
+**Backend**:
+- Upgrade to Render Starter ($7/month) for always-on service
+- Add caching layer (Redis) for frequently used data
+- Implement build queue to handle concurrent requests
+- Consider horizontal scaling with load balancer
+
+**Frontend**:
+- Upgrade to Netlify Pro for more bandwidth
+- Use Netlify Edge Functions for faster responses
+- Implement CDN caching for static assets
+- Add A/B testing and feature flags
+
+**AI Providers**:
+- Upgrade to paid tiers for higher rate limits
+- Implement intelligent caching of AI responses
+- Use cheaper models for simple tasks
+- Add fallback providers for redundancy
+
+---
+
+## Part 10: Backup and Disaster Recovery
+
+### Backup Strategy
+
+**Code Backup**:
+- GitHub repository stores all code
+- Use GitHub branches for development
+- Tag releases for production versions
+
+**Data Backup**:
+- Generated apps stored in GitHub via Deployer
+- Netlify provides rollback to previous deployments
+- Render provides logs for debugging
+
+### Disaster Recovery
+
+**If Backend Goes Down**:
+1. Check Render service status
+2. Review service logs
+3. Redeploy if necessary
+4. Use Git to restore from known good state
+
+**If Frontend Goes Down**:
+1. Check Netlify build logs
+2. Redeploy from GitHub
+3. Use Netlify rollback feature
+4. Verify environment variables
+
+**If AI Provider Fails**:
+1. Smart Router automatically fails over
+2. Monitor logs for provider switching
+3. Update API keys if needed
+4. Implement circuit breaker pattern
+
+---
+
+## Quick Reference
+
+### Render Service URL
+```
+https://singularity-agi-backend.onrender.com
+```
+
+### Netlify Site URL
+```
+https://singularity-agi-dashboard.netlify.app
+```
+
+### Health Check Endpoint
+```
+https://singularity-agi-backend.onrender.com/health
+```
+
+### WebSocket Endpoint
+```
+wss://singularity-agi-backend.onrender.com/ws/build
+```
+
+### API Documentation
+```
+https://singularity-agi-backend.onrender.com/docs
+```
+
+---
 
 ## Next Steps
 
-1. **Choose a deployment option** based on your needs
-2. **Set up backend hosting** (Railway/Render recommended)
-3. **Deploy frontend** to Netlify
-4. **Configure environment variables** in both platforms
-5. **Test end-to-end** by building a sample app
-6. **Monitor logs and performance**
+1. ✅ Complete backend deployment to Render
+2. ✅ Complete frontend deployment to Netlify
+3. ✅ Configure environment variables
+4. ✅ Test end-to-end build process
+5. ✅ Set up monitoring and alerts
+6. ✅ Document your specific URLs and settings
+7. ✅ Share with team/users
 
-## Support
+---
 
-For issues or questions:
-- Check logs in Railway/Render dashboard
-- Review Netlify build logs
-- Test backend API directly: `https://your-backend-url/docs`
-- Verify WebSocket connection: Browser DevTools → Network → WS tab
+## Support and Resources
+
+- **Render Documentation**: [docs.render.com](https://docs.render.com)
+- **Netlify Documentation**: [docs.netlify.com](https://docs.netlify.com)
+- **FastAPI Documentation**: [fastapi.tiangolo.com](https://fastapi.tiangolo.com)
+- **Next.js Documentation**: [nextjs.org/docs](https://nextjs.org/docs)
+- **Project Issues**: Check GitHub issues for this repo
+
+---
+
+**Deployed and ready to build! 🚀**

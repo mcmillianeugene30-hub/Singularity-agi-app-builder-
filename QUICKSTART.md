@@ -1,142 +1,161 @@
-# 🚀 Quick Start Guide - Netlify Deployment
+# 🚀 Quick Start: Render + Netlify Deployment
 
-This guide helps you deploy the Singularity AGI Dashboard to Netlify in under 5 minutes.
+Fast-track guide to deploy Singularity AGI App Builder to production.
 
-## Prerequisites
+## 1. Backend: Deploy to Render (5 minutes)
 
-- GitHub account
-- Netlify account (free tier works)
-- Node.js 18+ installed locally
+### Prerequisites
+- Render account: https://render.com
+- GitHub repository with this code
+- 5 AI API keys (OpenRouter, Groq, Gemini, GitHub, Netlify)
 
-## Step 1: Prepare Your Repository
+### Steps
 
-1. **Fork or clone** this repository to your GitHub
-2. **Verify the dashboard structure**:
-   ```bash
-   ls -la dashboard/
-   # Should show: app/, package.json, next.config.js, tsconfig.json, etc.
+1. **Go to Render Dashboard**
+   ```
+   https://dashboard.render.com
    ```
 
-## Step 2: Deploy to Netlify
+2. **Create Web Service**
+   - Click "New" → "Web Service"
+   - Connect your GitHub repo
+   - Configure:
+     - Name: `singularity-agi-backend`
+     - Runtime: Python 3
+     - Build Command: `pip install -r requirements.txt`
+     - Start Command: `uvicorn api:app --host 0.0.0.0 --port $PORT`
 
-### Option A: Manual Deploy (Fastest)
-
-1. **Build locally**:
-   ```bash
-   cd dashboard
-   npm install
-   npm run build
+3. **Add Environment Variables**
+   Go to "Advanced" → "Environment" and add:
+   ```
+   OPENROUTER_API_KEY=your_key_here
+   GROQ_API_KEY=your_key_here
+   GEMINI_API_KEY=your_key_here
+   GITHUB_TOKEN=your_github_pat_here
+   NETLIFY_TOKEN=your_netlify_token_here
    ```
 
-2. **Upload to Netlify**:
-   - Go to [app.netlify.com](https://app.netlify.com)
-   - Click "Add new site" → "Deploy manually"
-   - Drag and drop the `dashboard/out` folder
-   - Your site will be live in seconds!
+4. **Deploy**
+   - Click "Deploy Web Service"
+   - Wait 2-5 minutes
+   - Get your URL: `https://singularity-agi-backend.onrender.com`
 
-### Option B: Git Deploy (Recommended for Updates)
+5. **Test**
+   ```bash
+   curl https://singularity-agi-backend.onrender.com/health
+   ```
 
-1. **Connect GitHub to Netlify**:
-   - In Netlify dashboard: "Add new site" → "Import an existing project"
-   - Select your GitHub repository
-   - Configure build settings:
-     - **Branch**: `main` (or your branch name)
-     - **Build command**: `cd dashboard && npm install && npm run build`
-     - **Publish directory**: `dashboard/out`
+---
 
-2. **Add environment variable** (optional, for connecting to backend):
-   - Site settings → Environment variables → Add variable
-   - Key: `NEXT_PUBLIC_API_URL`
-   - Value: Your backend URL (e.g., `https://your-api.railway.app`)
+## 2. Frontend: Deploy to Netlify (3 minutes)
 
-3. **Deploy**:
+### Steps
+
+1. **Go to Netlify Dashboard**
+   ```
+   https://app.netlify.com
+   ```
+
+2. **Create New Site**
+   - Click "Add new site" → "Import an existing project"
+   - Connect your GitHub repo
+   - Configure:
+     - Build command: `cd dashboard && npm install && npm run build`
+     - Publish directory: `dashboard/out`
+
+3. **Add Environment Variable**
+   - Go to "Site Settings" → "Environment Variables"
+   - Add:
+     ```
+     NEXT_PUBLIC_API_URL=https://singularity-agi-backend.onrender.com
+     ```
+
+4. **Deploy**
    - Click "Deploy site"
-   - Netlify will build and deploy automatically
+   - Wait 1-2 minutes
+   - Get your URL: `https://singularity-agi-dashboard.netlify.app`
 
-## Step 3: Access Your Dashboard
+5. **Test**
+   - Open your Netlify URL
+   - Dashboard should load
+   - "System Online" indicator should be green
 
-Once deployed, you'll get a URL like:
-- `https://yoursite.netlify.app`
+---
 
-Open it in your browser! You should see the Singularity AGI Dashboard.
+## 3. Test Integration (2 minutes)
 
-## Step 4: Connect to Backend (Optional)
+### Test Build Process
 
-The dashboard needs a running backend to function fully. Here's how to set it up:
+1. Open your Netlify dashboard URL
+2. Enter a prompt: "Build a simple todo app"
+3. Click "Launch App"
+4. Watch logs:
+   - `[+] WebSocket connected`
+   - `[*] Planning your app`
+   - `[+] Multi-agent build complete`
 
-### Quick Test Mode (No Backend)
+### Expected URLs
 
-The dashboard will load and show the UI, but building apps won't work without the backend.
-
-### Connect to Running Backend
-
-1. **Deploy backend to Railway** (Free):
-   ```bash
-   # Follow the full DEPLOYMENT.md guide
-   railway init
-   railway up
-   ```
-
-2. **Update Netlify environment**:
-   - Go to Netlify site settings → Environment variables
-   - Add: `NEXT_PUBLIC_API_URL=https://your-backend.railway.app`
-
-3. **Redeploy**:
-   - Netlify will automatically redeploy with the new variable
-
-## Troubleshooting
-
-### Build Fails
-
-**Error**: "Command failed with exit code 1"
-
-**Solution**:
-```bash
-# Check Node version (must be 18+)
-node --version
-
-# Try building locally first
-cd dashboard
-npm install
-npm run build
-
-# Check for errors
+```
+Backend: https://singularity-agi-backend.onrender.com
+Frontend: https://singularity-agi-dashboard.netlify.app
+WebSocket: wss://singularity-agi-backend.onrender.com/ws/build
 ```
 
-### Blank Page After Deploy
+---
 
-**Error**: Page loads but shows blank screen
+## Common Issues & Fixes
 
-**Solution**:
-1. Check browser console (F12) for errors
-2. Verify `next.config.js` has `output: 'export'`
-3. Ensure `tsconfig.json` exists in dashboard folder
+### Issue: "Backend is sleeping"
+**Fix**: Wait 30-60 seconds for Render service to wake up
 
-### Can't Connect to Backend
+### Issue: "WebSocket connection failed"
+**Fix**:
+1. Verify `NEXT_PUBLIC_API_URL` is set correctly in Netlify
+2. Check backend is running: Test `/health` endpoint
+3. Verify CORS allows your Netlify domain
 
-**Error**: "WebSocket error occurred"
+### Issue: "Build failed - API key error"
+**Fix**:
+1. Check all environment variables in Render
+2. Verify API keys are valid and not expired
+3. Regenerate tokens if needed
 
-**Solution**:
-1. Verify backend is running
-2. Check `NEXT_PUBLIC_API_URL` is set correctly
-3. Test backend API: `curl https://your-backend-url.com/docs`
+---
 
-## Custom Domain (Optional)
+## Cost Summary
 
-1. In Netlify: Domain settings → Add custom domain
-2. Buy or use existing domain
-3. Update DNS records as instructed
-4. Your custom domain will be live!
+### Free Tier
+- **Backend**: $0/month (Render free)
+- **Frontend**: $0/month (Netlify free)
+- **AI Providers**: $0-50/month (depending on usage)
+
+### Production Tier
+- **Backend**: $7/month (Render Starter - always-on)
+- **Frontend**: $19/month (Netlify Pro)
+- **AI Providers**: $50-200/month
+
+---
 
 ## Next Steps
 
-- Deploy the backend following [DEPLOYMENT.md](DEPLOYMENT.md)
-- Test building a sample app
-- Customize the dashboard design
-- Add authentication/security
+1. ✅ Deploy backend to Render
+2. ✅ Deploy frontend to Netlify
+3. ✅ Test build process
+4. ✅ Set up monitoring
+5. ✅ Share your deployed URLs
 
-## Support
+---
 
-- Netlify docs: [docs.netlify.com](https://docs.netlify.com)
-- Full deployment guide: [DEPLOYMENT.md](DEPLOYMENT.md)
-- GitHub issues: Report issues in the repository
+## Need Help?
+
+- **Render Docs**: https://docs.render.com
+- **Netlify Docs**: https://docs.netlify.com
+- **Full Deployment Guide**: See `DEPLOYMENT.md`
+- **Detailed Checklist**: See `DEPLOYMENT_CHECKLIST.md`
+
+---
+
+**Ready to build! 🚀**
+
+Total time: ~10 minutes
