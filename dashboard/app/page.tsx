@@ -15,17 +15,33 @@ export default function SingularityDashboard() {
 
   const startBuild = async () => {
     setIsBuilding(true);
-    setLogs(["[*] Initializing Singularity AGI...", "[*] Analyzing project requirements..."]);
+    setLogs(["[*] Initializing WebSocket connection..."]);
     
-    // Simulate real-time logs (In production, this would use WebSockets/SSE)
-    setTimeout(() => setLogs(prev => [...prev, "[*] Architecting project blueprint (Gemini)..."]), 1500);
-    setTimeout(() => setLogs(prev => [...prev, "[+] Blueprint generated successfully.", "[*] Generating source code (Groq)..."]), 3000);
-    setTimeout(() => setLogs(prev => [...prev, "[*] Building Next.js components...", "[*] Setting up Supabase schema..."]), 5000);
-    setTimeout(() => setLogs(prev => [...prev, "[+] Project build complete.", "[*] Deploying to GitHub and Netlify..."]), 7000);
-    setTimeout(() => {
-      setLogs(prev => [...prev, "[SUCCESS] App is live at: https://singularity-app-xyz.netlify.app"]);
-      setIsBuilding(false);
-    }, 9000);
+    // Connect to WebSocket server (assuming localhost:8000)
+    const socket = new WebSocket("ws://localhost:8000/ws/build");
+    
+    socket.onopen = () => {
+        socket.send(JSON.stringify({ prompt, deploy: true, heal: true }));
+        setLogs(prev => [...prev, "[+] WebSocket connected. Sending build request..."]);
+    };
+    
+    socket.onmessage = (event) => {
+        const message = event.data;
+        setLogs(prev => [...prev, message]);
+        if (message.includes("[SUCCESS]")) {
+            setIsBuilding(false);
+        }
+    };
+    
+    socket.onerror = (error) => {
+        setLogs(prev => [...prev, "[!] WebSocket error occurred."]);
+        setIsBuilding(false);
+    };
+    
+    socket.onclose = () => {
+        setLogs(prev => [...prev, "[*] Build connection closed."]);
+        setIsBuilding(false);
+    };
   };
 
   return (
@@ -63,7 +79,7 @@ export default function SingularityDashboard() {
               onChange={(e) => setPrompt(e.target.value)}
             />
             <div className="flex justify-between items-center">
-              <p className="text-sm text-slate-500 italic">Singularity will architect, code, and deploy your app automatically.</p>
+              <p className="text-sm text-slate-500 italic">Singularity will architect, code, heal, and deploy your app automatically.</p>
               <button 
                 onClick={startBuild}
                 disabled={isBuilding || !prompt}
@@ -79,7 +95,7 @@ export default function SingularityDashboard() {
           <section className="bg-slate-950 border border-slate-800 rounded-2xl overflow-hidden flex flex-col h-[400px]">
             <div className="bg-slate-900 border-b border-slate-800 px-6 py-3 flex justify-between items-center">
               <h2 className="text-sm font-mono text-slate-400 flex items-center gap-2">
-                <Terminal className="w-4 h-4" /> Build Logs
+                <Terminal className="w-4 h-4" /> Real-time AGI Logs
               </h2>
               <div className="flex gap-1.5">
                 <div className="w-2.5 h-2.5 rounded-full bg-slate-700"></div>
@@ -134,7 +150,11 @@ export default function SingularityDashboard() {
               </li>
               <li className="flex items-center gap-2">
                 <span className="w-1.5 h-1.5 bg-indigo-500 rounded-full"></span>
-                Smart Provider Rotation
+                Self-Healing AI Logic
+              </li>
+              <li className="flex items-center gap-2">
+                <span className="w-1.5 h-1.5 bg-indigo-500 rounded-full"></span>
+                Multi-Agent Specialization
               </li>
             </ul>
           </div>
