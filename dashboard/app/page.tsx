@@ -16,32 +16,39 @@ export default function SingularityDashboard() {
   const startBuild = async () => {
     setIsBuilding(true);
     setLogs(["[*] Initializing WebSocket connection..."]);
-    
-    // Connect to WebSocket server (assuming localhost:8000)
-    const socket = new WebSocket("ws://localhost:8000/ws/build");
-    
-    socket.onopen = () => {
+
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "ws://localhost:8000";
+    const wsUrl = apiUrl.replace(/^http/, "ws") + "/ws/build";
+
+    try {
+      const socket = new WebSocket(wsUrl);
+
+      socket.onopen = () => {
         socket.send(JSON.stringify({ prompt, deploy: true, heal: true }));
         setLogs(prev => [...prev, "[+] WebSocket connected. Sending build request..."]);
-    };
-    
-    socket.onmessage = (event) => {
+      };
+
+      socket.onmessage = (event) => {
         const message = event.data;
         setLogs(prev => [...prev, message]);
-        if (message.includes("[SUCCESS]")) {
-            setIsBuilding(false);
+        if (message.includes("[SUCCESS]") || message.includes("[FAILURE]")) {
+          setIsBuilding(false);
         }
-    };
-    
-    socket.onerror = (error) => {
-        setLogs(prev => [...prev, "[!] WebSocket error occurred."]);
+      };
+
+      socket.onerror = (error) => {
+        setLogs(prev => [...prev, "[!] WebSocket error occurred. Is the backend running?"]);
         setIsBuilding(false);
-    };
-    
-    socket.onclose = () => {
+      };
+
+      socket.onclose = () => {
         setLogs(prev => [...prev, "[*] Build connection closed."]);
         setIsBuilding(false);
-    };
+      };
+    } catch (error) {
+      setLogs(prev => [...prev, "[!] Failed to connect to WebSocket. Make sure the backend is running."]);
+      setIsBuilding(false);
+    }
   };
 
   return (
