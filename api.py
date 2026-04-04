@@ -22,6 +22,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.get("/health")
+async def health_check():
+    """Health check endpoint for Render"""
+    return {"status": "healthy", "service": "singularity-agi-backend"}
+
 class BuildRequest(BaseModel):
     prompt: str
     deploy: bool = False
