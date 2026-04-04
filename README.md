@@ -60,13 +60,18 @@ python main.py --prompt "A coffee shop landing page with an online ordering syst
 We have provided a modern, high-performance dashboard built with **Next.js**, **Tailwind CSS**, and **FastAPI**. This allows you to visualize the build process and manage your AI provider status.
 
 ### Running the Backend API:
-1.  Install FastAPI and Uvicorn:
+1.  Install dependencies:
     ```bash
-    pip install fastapi uvicorn
+    pip install -r requirements.txt
     ```
-2.  Start the API server:
+2.  Configure environment variables (see `.env.example`):
     ```bash
-    python api.py
+    cp .env.example .env
+    # Edit .env with your API keys
+    ```
+3.  Start the API server:
+    ```bash
+    uvicorn api:app --reload
     ```
     The API will be available at `http://localhost:8000`.
 
@@ -81,6 +86,37 @@ We have provided a modern, high-performance dashboard built with **Next.js**, **
     npm run dev
     ```
     Open `http://localhost:3000` to access your Singularity AGI Dashboard.
+
+## 🌐 Production Deployment
+
+The Singularity AGI App Builder is now ready for production deployment!
+
+### Quick Start - Deploy Frontend to Netlify:
+
+1. **Build the dashboard**:
+   ```bash
+   cd dashboard
+   npm install
+   npm run build
+   ```
+
+2. **Deploy to Netlify**:
+   - Go to [app.netlify.com](https://app.netlify.com)
+   - Click "Add new site" → "Deploy manually"
+   - Upload the `/dashboard/out` folder OR connect your GitHub repository
+   - Configure build settings (see `netlify.toml`)
+
+3. **Deploy Backend** (Required for full functionality):
+   - Deploy to [Railway](https://railway.app) or [Render](https://render.com)
+   - See [DEPLOYMENT.md](DEPLOYMENT.md) for complete deployment guide
+
+### Deployment Options:
+
+1. **Frontend Only (Quick)**: Deploy dashboard to Netlify
+2. **Full Deployment**: Deploy backend to Railway + frontend to Netlify (Recommended)
+3. **Serverless**: Convert to serverless functions (Advanced)
+
+For detailed deployment instructions, troubleshooting, and configuration, see **[DEPLOYMENT.md](DEPLOYMENT.md)**.
 
 ---
 
