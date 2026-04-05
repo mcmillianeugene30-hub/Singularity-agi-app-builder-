@@ -67,7 +67,7 @@ class Architect:
         - If the app is simple, use Next.js + Tailwind + Supabase.
         - If the app is data-heavy or needs Python, suggest a FastAPI/Flask backend.
         - If the app is a simple landing page, use Vite + React.
-        - Always include the necessary config files (e.g., netlify.toml, railway.json, fly.toml, Dockerfile).
+        - Always include the necessary config files (e.g., netlify.toml, railway.json, vercel.json).
         
         The JSON must follow this structure:
         ...

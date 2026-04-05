@@ -142,7 +142,7 @@ async def websocket_endpoint(websocket: WebSocket):
             os.getenv("GITHUB_TOKEN"), 
             os.getenv("NETLIFY_TOKEN"),
             os.getenv("RAILWAY_TOKEN"),
-            os.getenv("FLY_TOKEN")
+            os.getenv("VERCEL_TOKEN")
         )
 
         # 4. Phase 1: Planning
@@ -222,9 +222,9 @@ async def websocket_endpoint(websocket: WebSocket):
         if deploy_target == "railway":
             deployer.deploy_to_railway(project_path, project_name)
             deploy_url = f"https://{project_name}.up.railway.app"
-        elif deploy_target == "fly":
-            deployer.deploy_to_fly(project_path, project_name)
-            deploy_url = f"https://{project_name}.fly.dev"
+        elif deploy_target == "vercel":
+            deployer.deploy_to_vercel(project_path, project_name)
+            deploy_url = f"https://{project_name}.vercel.app"
         else:
             deployer.deploy_to_netlify(project_path, project_name)
             deploy_url = f"https://{project_name}.netlify.app"

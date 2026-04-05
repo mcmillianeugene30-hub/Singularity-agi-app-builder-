@@ -98,7 +98,7 @@ export default function SingularityDashboard() {
                 <select value={deployTarget} onChange={(e) => setDeployTarget(e.target.value)} className="bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-300 outline-none focus:ring-1 focus:ring-indigo-500">
                   <option value="netlify">Netlify (Serverless)</option>
                   <option value="railway">Railway (Full-stack)</option>
-                  <option value="fly">Fly.io (Persistent)</option>
+                  <option value="vercel">Vercel (Production)</option>
                 </select>
                 <div className="flex gap-2 text-[10px] uppercase tracking-wider font-bold">
                     <span className="text-indigo-400">SELF-HEALING ON</span>

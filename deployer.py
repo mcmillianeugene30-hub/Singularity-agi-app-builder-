@@ -8,11 +8,11 @@ class Deployer:
     Automates GitHub, Netlify, Railway, and Fly.io.
     """
     
-    def __init__(self, github_token: str, netlify_token: str, railway_token: str = None, fly_token: str = None):
+    def __init__(self, github_token: str, netlify_token: str, railway_token: str = None, vercel_token: str = None):
         self.github_token = github_token
         self.netlify_token = netlify_token
         self.railway_token = railway_token
-        self.fly_token = fly_token
+        self.vercel_token = vercel_token
 
     def deploy_to_railway(self, project_path: str, repo_name: str):
         """
@@ -32,21 +32,24 @@ class Deployer:
         except Exception as e:
             print(f"[!] Railway deployment failed: {e}")
 
-    def deploy_to_fly(self, project_path: str, repo_name: str):
+    def deploy_to_vercel(self, project_path: str, repo_name: str):
         """
-        Deploys to Fly.io via their CLI.
+        Deploys to Vercel via their CLI.
         """
-        if not self.fly_token:
-            print("[!] Fly.io token missing. Skipping.")
+        if not self.vercel_token:
+            print("[!] Vercel token missing. Skipping.")
             return
 
-        print(f"[*] Deploying to Fly.io: {repo_name}")
+        print(f"[*] Deploying to Vercel: {repo_name}")
         try:
-            # We assume 'flyctl' is installed.
-            subprocess.run(["fly", "launch", "--name", repo_name, "--now", "--region", "lax"], cwd=project_path, check=True)
-            print("[+] Fly.io deployment complete.")
+            # We assume 'vercel' CLI is installed.
+            # vercel --token $VERCEL_TOKEN --prod --yes
+            env = os.environ.copy()
+            env["VERCEL_TOKEN"] = self.vercel_token
+            subprocess.run(["vercel", "--prod", "--yes", "--name", repo_name], cwd=project_path, check=True, env=env)
+            print("[+] Vercel deployment complete.")
         except Exception as e:
-            print(f"[!] Fly.io deployment failed: {e}")
+            print(f"[!] Vercel deployment failed: {e}")
 
     def deploy_to_netlify(self, project_path: str, repo_name: str):
         """

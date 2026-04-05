@@ -35,6 +35,7 @@ Ensure you have the following installed locally:
     GEMINI_API_KEY=your_key_here
     GITHUB_TOKEN=your_github_token
     NETLIFY_TOKEN=your_netlify_token
+    VERCEL_TOKEN=your_vercel_token
     ```
 
 ---
