@@ -60,15 +60,22 @@ python main.py --prompt "A coffee shop landing page with an online ordering syst
 We have provided a modern, high-performance dashboard built with **Next.js**, **Tailwind CSS**, and **FastAPI**. This allows you to visualize the build process and manage your AI provider status.
 
 ### Running the Backend API:
-1.  Install FastAPI and Uvicorn:
+1.  Install the required Python dependencies:
     ```bash
-    pip install fastapi uvicorn
+    pip install -r requirements.txt
     ```
 2.  Start the API server:
     ```bash
     python api.py
     ```
     The API will be available at `http://localhost:8000`.
+
+### 🚀 7. Netlify Deployment Fix
+If you encounter a `pydantic-core` or Rust/Cargo error during Netlify deployment, ensure the `netlify.toml` file is in your root directory. The build command should be:
+```bash
+python -m pip install --upgrade pip setuptools wheel && python -m pip install -r requirements.txt
+```
+This ensures the environment uses prebuilt binary wheels and skips the Rust compilation step.
 
 ### Running the Frontend Dashboard:
 1.  Navigate to the `dashboard/` directory.
