@@ -1,0 +1,53 @@
+[33mcommit 08839c713e90c7fd6b5a3f873308d791dd087a29[m[33m ([m[1;34mgrafted[m[33m, [m[1;36mHEAD[m[33m -> [m[1;32mcto/implement-agi-phases[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m, [m[1;32mmain[m[33m)[m
+Author: cto-new[bot] <140088366+cto-new[bot]@users.noreply.github.com>
+Date:   Sun Apr 5 05:25:30 2026 +0000
+
+    Merge pull request #5 from mcmillianeugene30-hub/cto/update-backend-netlify-connectivity
+    
+    Add Backend Verification and Dashboard Connection Features
+
+ .env.example                         |   13 [32m+[m
+ .gitignore                           |   63 [32m+++++[m
+ .renderignore                        |   71 [32m++++++[m
+ DEPLOYMENT.md                        |  647 [32m++++++++++++++++++++++++++++++++++++++++++++++++[m
+ DEPLOYMENT_CHECKLIST.md              |  295 [32m++++++++++++++++++++++[m
+ DEPLOYMENT_IMPLEMENTATION_SUMMARY.md |  420 [32m+++++++++++++++++++++++++++++++[m
+ Dockerfile                           |   29 [32m+++[m
+ NETLIFY_READY.md                     |  229 [32m+++++++++++++++++[m
+ PATH_FIX_SUMMARY.md                  |   80 [32m++++++[m
+ Procfile                             |    1 [32m+[m
+ QUICKSTART.md                        |  161 [32m++++++++++++[m
+ README.md                            |  141 [32m+++++++++++[m
+ SETUP.md                             |  284 [32m+++++++++++++++++++++[m
+ SUMMARY.md                           |  262 [32m++++++++++++++++++++[m
+ api.py                               |  134 [32m++++++++++[m
+ architect.py                         |   47 [32m++++[m
+ coder.py                             |   91 [32m+++++++[m
+ dashboard/.env.example               |    5 [32m+[m
+ dashboard/.env.local.example         |    5 [32m+[m
+ dashboard/.gitignore                 |   39 [32m+++[m
+ dashboard/app/globals.css            |   19 [32m++[m
+ dashboard/app/layout.tsx             |   22 [32m++[m
+ dashboard/app/page.tsx               |  222 [32m+++++++++++++++++[m
+ dashboard/next.config.js             |   14 [32m++[m
+ dashboard/package-lock.json          | 6189 [32m++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++[m
+ dashboard/package.json               |   28 [32m+++[m
+ dashboard/postcss.config.js          |    6 [32m+[m
+ dashboard/tailwind.config.ts         |   14 [32m++[m
+ dashboard/tsconfig.json              |   26 [32m++[m
+ deployer.py                          |   68 [32m+++++[m
+ deployment_automation.md             |   72 [32m++++++[m
+ docker-compose.yml                   |   19 [32m++[m
+ docs_generator.py                    |   46 [32m++++[m
+ healer.py                            |   98 [32m++++++++[m
+ main.py                              |   71 [32m++++++[m
+ netlify.toml                         |   20 [32m++[m
+ project/package.json                 |   34 [32m+++[m
+ render.yaml                          |   19 [32m++[m
+ requirements.txt                     |    6 [32m+[m
+ scripts/install-rust.sh              |    5 [32m+[m
+ singularity_agi_architecture.html    |  424 [32m++++++++++++++++++++++++++++++++[m
+ smart_router.py                      |  104 [32m++++++++[m
+ test-backend-health.sh               |  106 [32m++++++++[m
+ test-deployment.sh                   |  194 [32m+++++++++++++++[m
+ 44 files changed, 10843 insertions(+)

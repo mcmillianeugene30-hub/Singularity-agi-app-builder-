@@ -59,6 +59,14 @@ python main.py --prompt "A coffee shop landing page with an online ordering syst
 
 We have provided a modern, high-performance dashboard built with **Next.js**, **Tailwind CSS**, and **FastAPI**. This allows you to visualize the build process and manage your AI provider status.
 
+### 🧠 NEW: AGI Consciousness Monitoring
+The dashboard now includes an **AGI Consciousness** page that tracks:
+- **Consciousness Level**: Overall AGI development progress
+- **Capability Metrics**: Code generation, architecture, self-healing, creativity
+- **Neural Network Visualization**: Real-time neural activity and topology
+- **Singularity Tracking**: Proximity to technological singularity
+- **Development Stages**: ANI → AGI → ASI progression
+
 ### Running the Backend API:
 1.  Install dependencies:
     ```bash
@@ -86,6 +94,7 @@ We have provided a modern, high-performance dashboard built with **Next.js**, **
     npm run dev
     ```
     Open `http://localhost:3000` to access your Singularity AGI Dashboard.
+    - Visit `http://localhost:3000/agi` for the AGI Consciousness Monitor.
 
 ## 🌐 Production Deployment
 
@@ -125,7 +134,10 @@ For detailed deployment instructions, troubleshooting, and configuration, see **
 1.  **Smart Rotation (`smart_router.py`)**: Rotates between providers to bypass free-tier rate limits.
 2.  **Architect Phase (`architect.py`)**: Decomposes your prompt into a full project plan (JSON).
 3.  **Coder Phase (`coder.py`)**: Generates source code for every file in the plan.
-4.  **Deployer Phase (`deployer.py`)**: Creates a GitHub repo, pushes the code, and triggers a Netlify site build.
+4.  **Healer Phase (`healer.py`)**: Auto-detects and fixes build errors using AI feedback loops.
+5.  **Deployer Phase (`deployer.py`)**: Creates a GitHub repo, pushes the code, and triggers a Netlify site build.
+6.  **AGI Consciousness Tracking (`agi_consciousness.py`)**: Monitors AGI development and singularity proximity.
+7.  **Neural Network Visualization (`neural_network_viz.py`)**: Visualizes neural activity and topology.
 
 ---
 

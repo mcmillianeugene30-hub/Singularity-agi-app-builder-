@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Terminal, Shield, Cpu, Cloud, Settings, Play, CheckCircle, AlertCircle, RefreshCw } from "lucide-react";
+import { Terminal, Shield, Cpu, Cloud, Settings, Play, CheckCircle, AlertCircle, RefreshCw, Brain } from "lucide-react";
 
 export default function SingularityDashboard() {
   const [prompt, setPrompt] = useState("");
@@ -90,6 +90,13 @@ export default function SingularityDashboard() {
           <h1 className="text-2xl font-bold tracking-tight">Singularity <span className="text-indigo-500">AGI</span></h1>
         </div>
         <div className="flex gap-4">
+          <a
+            href="/agi"
+            className="flex items-center gap-2 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 rounded-full text-sm font-medium transition-all text-white"
+          >
+            <Brain className="w-4 h-4" />
+            AGI Consciousness
+          </a>
           <button
             onClick={testConnection}
             disabled={isTestingConnection}
