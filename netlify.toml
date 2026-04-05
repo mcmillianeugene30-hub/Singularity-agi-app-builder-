@@ -1,0 +1,10 @@
+[build]
+  # Optimized build command to ensure prebuilt wheels are used for pydantic-core
+  command = "python -m pip install --upgrade pip setuptools wheel && python -m pip install -r requirements.txt"
+
+[build.environment]
+  # Ensure we are using a modern Python version supported by Netlify
+  PYTHON_VERSION = "3.10"
+
+# Note: If this is a Next.js dashboard, the build command should eventually be 'npm run build'.
+# This configuration fixes the Python dependency installation that was failing.
