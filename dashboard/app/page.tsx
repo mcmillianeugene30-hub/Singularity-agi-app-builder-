@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Terminal, Shield, Cpu, Cloud, Settings, Play, CheckCircle, AlertCircle } from "lucide-react";
+import { Terminal, Shield, Cpu, Cloud, Settings, Play, CheckCircle, AlertCircle, RefreshCw } from "lucide-react";
 
 export default function SingularityDashboard() {
   const [prompt, setPrompt] = useState("");
@@ -12,6 +12,30 @@ export default function SingularityDashboard() {
   });
   const [logs, setLogs] = useState<string[]>([]);
   const [isBuilding, setIsBuilding] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState<"unknown" | "connected" | "disconnected">("unknown");
+  const [isTestingConnection, setIsTestingConnection] = useState(false);
+
+  const testConnection = async () => {
+    setIsTestingConnection(true);
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+    const healthUrl = apiUrl.replace(/^http/, "https") + "/health";
+
+    try {
+      const response = await fetch(healthUrl);
+      if (response.ok) {
+        const data = await response.json();
+        setConnectionStatus("connected");
+        setLogs(prev => [...prev, `[✓] Backend connected successfully`, `[✓] API URL: ${healthUrl}`, `[✓] Status: ${data.status}`]);
+      } else {
+        throw new Error(`HTTP ${response.status}`);
+      }
+    } catch (error) {
+      setConnectionStatus("disconnected");
+      setLogs(prev => [...prev, `[✗] Connection failed`, `[✗] API URL: ${healthUrl}`, `[✗] Error: ${error instanceof Error ? error.message : 'Unknown error'}`]);
+    } finally {
+      setIsTestingConnection(false);
+    }
+  };
 
   const startBuild = async () => {
     setIsBuilding(true);
@@ -66,6 +90,28 @@ export default function SingularityDashboard() {
           <h1 className="text-2xl font-bold tracking-tight">Singularity <span className="text-indigo-500">AGI</span></h1>
         </div>
         <div className="flex gap-4">
+          <button
+            onClick={testConnection}
+            disabled={isTestingConnection}
+            className={`flex items-center gap-2 px-3 py-1.5 border rounded-full text-sm font-medium transition-all ${
+              connectionStatus === "connected"
+                ? "bg-green-950/30 border-green-800 text-green-400"
+                : connectionStatus === "disconnected"
+                ? "bg-red-950/30 border-red-800 text-red-400"
+                : "bg-slate-900 border-slate-800 text-slate-400"
+            }`}
+          >
+            {isTestingConnection ? (
+              <RefreshCw className="w-4 h-4 animate-spin" />
+            ) : connectionStatus === "connected" ? (
+              <CheckCircle className="w-4 h-4" />
+            ) : connectionStatus === "disconnected" ? (
+              <AlertCircle className="w-4 h-4" />
+            ) : (
+              <RefreshCw className="w-4 h-4" />
+            )}
+            {connectionStatus === "connected" ? "Connected" : connectionStatus === "disconnected" ? "Disconnected" : isTestingConnection ? "Testing..." : "Test Connection"}
+          </button>
           <div className="flex items-center gap-2 px-3 py-1 bg-slate-900 border border-slate-800 rounded-full text-sm">
             <span className="w-2 h-2 bg-green-500 rounded-full"></span>
             System Online

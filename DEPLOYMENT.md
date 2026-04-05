@@ -183,11 +183,53 @@ netlify deploy --prod
 
 ---
 
-## Part 3: Connecting the Two
+## Part 3: Connecting Frontend & Backend
+
+### URL Formats
+
+The frontend dashboard needs to connect to the Render backend using specific URL formats:
+
+| Type | Format | Example |
+|------|--------|---------|
+| **HTTP API** | `https://your-render-url.onrender.com` | `https://singularity-agi-backend.onrender.com` |
+| **WebSocket** | `wss://your-render-url.onrender.com/ws/build` | `wss://singularity-agi-backend.onrender.com/ws/build` |
+| **Health Check** | `https://your-render-url.onrender.com/health` | `https://singularity-agi-backend.onrender.com/health` |
+| **API Info** | `https://your-render-url.onrender.com/` | `https://singularity-agi-backend.onrender.com/` |
+
+**Important Notes**:
+- Always use `wss://` (secure WebSocket) in production, not `ws://`
+- Always use `https://` (secure HTTP) in production, not `http://`
+- The dashboard automatically converts HTTP to WS for WebSocket connections
+
+### Connection Testing
+
+The dashboard includes a built-in "Test Connection" button that:
+
+1. Calls the `/health` endpoint on your Render backend
+2. Displays connection status (Connected/Disconnected)
+3. Shows the API URL being used
+4. Logs detailed connection information
+
+**To test the connection**:
+1. Open your Netlify-deployed dashboard
+2. Click "Test Connection" in the top-right header
+3. Check the logs section for results
+
+**Manual testing with cURL**:
+```bash
+# Test root endpoint (shows API info)
+curl https://your-render-url.onrender.com/
+
+# Test health endpoint
+curl https://your-render-url.onrender.com/health
+
+# With verbose output for debugging
+curl -v https://your-render-url.onrender.com/health
+```
 
 ### CORS Configuration
 
-The backend (`api.py`) already has CORS configured:
+The backend (`api.py`) has CORS configured to allow connections from any origin:
 
 ```python
 app.add_middleware(
@@ -199,17 +241,53 @@ app.add_middleware(
 )
 ```
 
-For production, you can restrict this to your Netlify domain:
+**For production security**, restrict CORS to your specific Netlify domain:
 
 ```python
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://singularity-agi-dashboard.netlify.app"],
+    allow_origins=["https://your-dashboard-name.netlify.app"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 ```
+
+### Environment Variable Requirements
+
+**Backend (Render)**:
+All required environment variables must be set in Render's environment configuration. See [Part 4: Environment Variables Setup](#part-4-environment-variables-setup) below for the complete list.
+
+**Frontend (Netlify)**:
+Only one environment variable is required for the frontend to connect to the backend:
+
+| Variable | Required | Example Value |
+|----------|----------|---------------|
+| `NEXT_PUBLIC_API_URL` | ✅ Yes | `https://singularity-agi-backend.onrender.com` |
+
+**Important**: The `NEXT_PUBLIC_` prefix is required for the variable to be available in the browser. Without this prefix, the dashboard cannot connect to the backend.
+
+### Common Connection Issues
+
+**Issue 1: "Not Found" on Render URL**
+- **Cause**: Backend hasn't finished deploying or startup command is incorrect
+- **Solution**: Check Render logs, verify `Procfile` contains: `web: uvicorn api:app --host 0.0.0.0 --port $PORT`
+
+**Issue 2: Dashboard shows "Disconnected"**
+- **Cause**: Wrong `NEXT_PUBLIC_API_URL` or backend is down
+- **Solution**: Verify the URL matches your Render URL exactly, test backend directly in browser
+
+**Issue 3: CORS errors in browser console**
+- **Cause**: Backend blocking requests from Netlify domain
+- **Solution**: Check CORS configuration in `api.py`, ensure `allow_origins` includes your Netlify domain
+
+**Issue 4: WebSocket connection fails**
+- **Cause**: Using `ws://` instead of `wss://` or backend is sleeping
+- **Solution**: Ensure secure WebSocket URLs, check if backend is running (not in cold start)
+
+**Issue 5: Environment variables not working**
+- **Cause**: Variables not saved or deployment not triggered
+- **Solution**: Redeploy after setting variables on Render and Netlify
 
 ### WebSocket URL Handling
 
