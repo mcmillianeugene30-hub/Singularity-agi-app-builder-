@@ -12,10 +12,6 @@ from deployer import Deployer
 from docs_generator import DocsGenerator
 from refiner import Refiner
 from linter import Linter
-from reasoning_engine import ReasoningEngine
-from multimodal import MultiModalAgent
-from rollback import RollbackManager
-from plugin_manager import PluginManager
 from supabase import create_client, Client
 from monitor import Monitor
 from db_manager import DatabaseManager
@@ -24,11 +20,14 @@ from migration_engine import MigrationEngine
 # 1. Initialize Supabase Platform Database (https://agi-app-builder.netlify.app/)
 PLATFORM_URL = os.getenv("SUPABASE_URL")
 PLATFORM_KEY = os.getenv("SUPABASE_SERVICE_KEY")
-supabase: Client = create_client(PLATFORM_URL, PLATFORM_KEY)
 
-# 1. Initialize Advanced AI Modules
-reasoning_engine = ReasoningEngine(SmartRouter(os.getenv("OPENROUTER_API_KEY"), os.getenv("GROQ_API_KEY"), os.getenv("GEMINI_API_KEY")))
-multimodal_agent = MultiModalAgent(SmartRouter(os.getenv("OPENROUTER_API_KEY"), os.getenv("GROQ_API_KEY"), os.getenv("GEMINI_API_KEY")))
+# Graceful initialization
+supabase = None
+if PLATFORM_URL and PLATFORM_KEY:
+    try:
+        supabase = create_client(PLATFORM_URL, PLATFORM_KEY)
+    except Exception as e:
+        print(f"[!] Supabase initialization failed: {e}")
 
 app = FastAPI(title="Singularity AGI API")
 monitor = Monitor()
@@ -55,28 +54,11 @@ class BuildRequest(BaseModel):
     refine: bool = True
     lint: bool = True
 
-class RateRequest(BaseModel):
-    project_id: str
-    rating: int
-    feedback: str = ""
-
-@app.post("/rate")
-async def rate_project(request: RateRequest):
-    """
-    Feedback Integration: Users rate generated apps.
-    """
-    try:
-        supabase.table("projects").update({
-            "rating": request.rating,
-            "feedback": request.feedback
-        }).eq("id", request.project_id).execute()
-        return {"status": "success", "message": "Feedback recorded."}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
 @app.get("/projects")
 async def get_all_projects():
     """Fetch all projects from the platform database."""
+    if not supabase:
+        return []
     response = supabase.table("projects").select("*").order("created_at", desc=True).execute()
     return response.data
 
@@ -98,25 +80,26 @@ async def websocket_endpoint(websocket: WebSocket):
     docs_flag = request_data.get("docs", True)
     refine_flag = request_data.get("refine", True)
     lint_flag = request_data.get("lint", True)
-    reason_flag = request_data.get("reason", True) # Advanced: Reasoning Engine
-    multimodal_flag = request_data.get("multimodal", True) # Advanced: Multi-Modal
     
     # 2. Register Project in Platform Database
-    project_entry = supabase.table("projects").insert({
-        "name": "Initializing...",
-        "prompt": prompt,
-        "status": "building",
-        "deploy_platform": deploy_target
-    }).execute()
-    project_id = project_entry.data[0]["id"]
+    project_id = None
+    if supabase:
+        project_entry = supabase.table("projects").insert({
+            "name": "Initializing...",
+            "prompt": prompt,
+            "status": "building",
+            "deploy_platform": deploy_target
+        }).execute()
+        project_id = project_entry.data[0]["id"]
 
     async def log_to_db(msg, type="info"):
         await websocket.send_text(msg)
-        supabase.table("build_logs").insert({
-            "project_id": project_id,
-            "message": msg,
-            "type": type
-        }).execute()
+        if supabase and project_id:
+            supabase.table("build_logs").insert({
+                "project_id": project_id,
+                "message": msg,
+                "type": type
+            }).execute()
 
     # 1. Setup Keys
     OPENROUTER_KEY = os.getenv("OPENROUTER_API_KEY")
@@ -140,7 +123,7 @@ async def websocket_endpoint(websocket: WebSocket):
         
         deployer = Deployer(
             os.getenv("GITHUB_TOKEN"), 
-            os.getenv("NETLIFY_TOKEN"),
+            os.getenv("NETLIFY_TOKEN") or os.getenv("NETLIFY_API_TOKEN"),
             os.getenv("RAILWAY_TOKEN"),
             os.getenv("VERCEL_TOKEN")
         )
@@ -149,31 +132,23 @@ async def websocket_endpoint(websocket: WebSocket):
         await log_to_db(f"[*] Planning your app ({deploy_target})...")
         blueprint = architect.plan_project(prompt, deploy_target=deploy_target)
         
-        # 5. Advanced: Code Reasoning & Suggestions (New)
-        if reason_flag:
-            await log_to_db("[*] Generating architectural reasoning and suggestions...")
-            explanation = reasoning_engine.explain_blueprint(prompt, blueprint)
-            suggestions = reasoning_engine.suggest_features(prompt, blueprint)
-            await websocket.send_text(json.dumps({"type": "reasoning", "explanation": explanation, "suggestions": suggestions}))
-            await log_to_db(f"[+] Reasoning complete. Suggestions generated.")
+        if "error" in blueprint:
+            await log_to_db(f"[!] Planning failed: {blueprint['error']}", "error")
+            if supabase and project_id:
+                supabase.table("projects").update({"status": "failed"}).eq("id", project_id).execute()
+            await websocket.close()
+            return
+        
+        project_name = blueprint.get('project_name', 'singularity-app')
+        await log_to_db(f"[+] Project blueprint generated: {project_name}")
+        if supabase and project_id:
+            supabase.table("projects").update({"name": project_name, "blueprint": blueprint}).eq("id", project_id).execute()
 
-        # 6. Advanced: Multi-Modal Generation (New)
-        if multimodal_flag:
-            await log_to_db("[*] Generating UI mockup and architecture diagram...")
-            mockup_url = multimodal_agent.generate_ui_mockup(blueprint.get('project_name', 'App'), prompt)
-            diagram_code = multimodal_agent.generate_architecture_diagram(blueprint)
-            await websocket.send_text(json.dumps({"type": "multimodal", "mockup": mockup_url, "diagram": diagram_code}))
-            await log_to_db("[+] Multi-modal assets generated.")
-
-        # 7. Phase 2: Building
+        # 5. Phase 2: Building
         project_path = os.path.join(os.getcwd(), "output", project_name)
         migrator = MigrationEngine(project_path)
         
         await log_to_db(f"[*] Starting multi-agent build for: {project_name}")
-        # Initialize Rollback Manager for safety (New)
-        rollback_mgr = RollbackManager(project_path)
-        rollback_mgr.snapshot_project("initial_build")
-        
         coder.build_project(blueprint, base_dir=project_path)
         await log_to_db(f"[+] Multi-agent build complete.")
 
@@ -229,19 +204,23 @@ async def websocket_endpoint(websocket: WebSocket):
             deployer.deploy_to_netlify(project_path, project_name)
             deploy_url = f"https://{project_name}.netlify.app"
 
-        supabase.table("projects").update({
-            "status": "live",
-            "deploy_url": deploy_url
-        }).eq("id", project_id).execute()
+        if supabase and project_id:
+            supabase.table("projects").update({
+                "status": "live",
+                "deploy_url": deploy_url
+            }).eq("id", project_id).execute()
 
         await log_to_db(f"[SUCCESS] App '{project_name}' is live at {deploy_url}", "success")
         await websocket.close()
         
     except Exception as e:
         await log_to_db(f"[ERROR] {str(e)}", "error")
-        supabase.table("projects").update({"status": "failed"}).eq("id", project_id).execute()
+        if supabase and project_id:
+            supabase.table("projects").update({"status": "failed"}).eq("id", project_id).execute()
         await websocket.close()
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    # Render provides a PORT environment variable
+    port = int(os.environ.get("PORT", 8000))
+    uvicorn.run(app, host="0.0.0.0", port=port)
