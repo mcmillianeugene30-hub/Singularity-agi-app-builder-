@@ -134,7 +134,8 @@ async def websocket_endpoint(websocket: WebSocket):
         blueprint = architect.plan_project(prompt, deploy_target=deploy_target)
         
         if "error" in blueprint:
-            await log_to_db(f"[!] Planning failed: {blueprint['error']}", "error")
+            error_msg = blueprint.get("details", blueprint["error"])
+            await log_to_db(f"[!] Planning failed: {error_msg}", "error")
             if supabase and project_id:
                 supabase.table("projects").update({"status": "failed"}).eq("id", project_id).execute()
             await websocket.close()

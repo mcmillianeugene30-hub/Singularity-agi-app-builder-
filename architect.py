@@ -61,8 +61,20 @@ class Architect:
         }}
         """
         
-        response = self.router.call_llm(f"{system_prompt}\n\nUser Request: {user_prompt}", task_type="architecture")
-        
+        try:
+            response = self.router.call_llm(f"{system_prompt}\n\nUser Request: {user_prompt}", task_type="architecture")
+            return self._parse_response(response)
+        except Exception as e:
+            # Fallback: Retry with a simpler prompt if the first one fails
+            print(f"[*] Planning attempt 1 failed ({e}). Retrying with simplified prompt...")
+            try:
+                simple_prompt = f"Generate a JSON project blueprint for: {user_prompt}. Use Next.js and Supabase. Output ONLY JSON."
+                response = self.router.call_llm(simple_prompt, task_type="architecture")
+                return self._parse_response(response)
+            except Exception as e2:
+                return {"error": "Failed to generate project plan.", "details": str(e2)}
+
+    def _parse_response(self, response: str) -> dict:
         # Aggressive JSON extraction
         json_str = response
         if "```json" in json_str:
@@ -80,5 +92,4 @@ class Architect:
             return json.loads(json_str)
         except Exception as e:
             print(f"[!] Architect failed to generate valid JSON: {e}")
-            print(f"[*] Raw Response: {response}")
-            return {"error": "Failed to generate project plan."}
+            raise Exception(f"Invalid JSON format returned by AI. Raw: {response[:100]}...")
