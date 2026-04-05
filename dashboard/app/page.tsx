@@ -16,10 +16,13 @@ export default function SingularityDashboard() {
   const [multimodal, setMultimodal] = useState({ mockup: "", diagram: "" });
   const [liveCode, setLiveCode] = useState("");
 
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+  const WS_URL = API_URL.replace("http", "ws");
+
   useEffect(() => {
     const fetchMonitor = async () => {
       try {
-        const res = await fetch("http://localhost:8000/monitor");
+        const res = await fetch(`${API_URL}/monitor`);
         const data = await res.json();
         setMonitorStatus(data);
       } catch (err) { console.error("Monitor fetch failed"); }
@@ -35,7 +38,7 @@ export default function SingularityDashboard() {
     setReasoning({ explanation: "", suggestions: [] });
     setMultimodal({ mockup: "", diagram: "" });
 
-    const socket = new WebSocket("ws://localhost:8000/ws/build");
+    const socket = new WebSocket(`${WS_URL}/ws/build`);
     
     socket.onopen = () => {
         socket.send(JSON.stringify({ prompt, deploy: deployTarget, heal: true, docs: true, refine: true, lint: true }));

@@ -1,10 +1,11 @@
 [build]
-  # Optimized build command to ensure prebuilt wheels are used for pydantic-core
-  command = "python -m pip install --upgrade pip setuptools wheel && python -m pip install -r requirements.txt"
+  # Build the Next.js dashboard from the subdirectory
+  command = "cd dashboard && npm install && npm run build"
+  publish = "dashboard/.next"
 
 [build.environment]
-  # Ensure we are using a modern Python version supported by Netlify
-  PYTHON_VERSION = "3.10"
+  NODE_VERSION = "20"
+  NEXT_USE_NETLIFY_EDGE = "true"
 
-# Note: If this is a Next.js dashboard, the build command should eventually be 'npm run build'.
-# This configuration fixes the Python dependency installation that was failing.
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
