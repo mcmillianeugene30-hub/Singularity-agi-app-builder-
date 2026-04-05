@@ -1,7 +1,8 @@
 [build]
-  # Build the Next.js dashboard from the subdirectory
-  command = "cd dashboard && npm install && npm run build"
-  publish = "dashboard/.next"
+  # Since the 'Base directory' is set to 'dashboard' in Netlify UI, 
+  # commands run inside the 'dashboard' folder automatically.
+  command = "npm install && npm run build"
+  publish = ".next"
 
 [build.environment]
   NODE_VERSION = "20"
