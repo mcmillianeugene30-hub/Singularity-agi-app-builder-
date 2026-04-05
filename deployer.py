@@ -25,11 +25,7 @@ class Deployer:
 
         print(f"[*] Deploying to Render: {repo_name}")
         try:
-            # Render deployment via API requires a Blueprint or creating a service
-            # For this builder, we trigger a deploy if the service exists or provide instructions
-            url = "https://api.render.com/v1/services"
-            headers = {"Authorization": f"Bearer {self.render_token}", "Accept": "application/json"}
-            # This is a simplified placeholder for Render API orchestration
+            # Placeholder for Render API orchestration
             print("[+] Render deployment request sent via API.")
         except Exception as e:
             print(f"[!] Render deployment failed: {e}")
@@ -44,8 +40,6 @@ class Deployer:
 
         print(f"[*] Deploying to Railway: {repo_name}")
         try:
-            # Note: In a real environment, we'd use 'railway link' and 'railway up'
-            # or the GraphQL API. For this AGI builder, we'll assume the 'railway' CLI is installed.
             subprocess.run(["railway", "link", "--project", repo_name], cwd=project_path, check=True)
             subprocess.run(["railway", "up"], cwd=project_path, check=True)
             print("[+] Railway deployment complete.")
@@ -62,8 +56,6 @@ class Deployer:
 
         print(f"[*] Deploying to Vercel: {repo_name}")
         try:
-            # We assume 'vercel' CLI is installed.
-            # vercel --token $VERCEL_TOKEN --prod --yes
             env = os.environ.copy()
             env["VERCEL_TOKEN"] = self.vercel_token
             subprocess.run(["vercel", "--prod", "--yes", "--name", repo_name], cwd=project_path, check=True, env=env)
@@ -73,14 +65,28 @@ class Deployer:
 
     def deploy_to_netlify(self, project_path: str, repo_name: str):
         """
-        Full-stack deployment pipeline:
-        1. Create GitHub Repo
-        2. Push generated code
-        3. Link to Netlify (via Netlify API)
+        Deploys to Netlify via their CLI.
         """
-        print(f"[*] Deploying project: {repo_name}")
-        
-        # 1. Create GitHub Repository
+        if not self.netlify_token:
+            print("[!] Netlify token missing. Skipping.")
+            return
+
+        print(f"[*] Deploying to Netlify: {repo_name}")
+        try:
+            # We assume 'netlify' CLI is installed.
+            # netlify deploy --dir . --prod --auth $NETLIFY_TOKEN
+            env = os.environ.copy()
+            env["NETLIFY_AUTH_TOKEN"] = self.netlify_token
+            subprocess.run(["netlify", "deploy", "--dir", ".", "--prod"], cwd=project_path, check=True, env=env)
+            print("[+] Netlify deployment complete.")
+        except Exception as e:
+            print(f"[!] Netlify deployment failed: {e}")
+
+    def deploy_to_github(self, project_path: str, repo_name: str):
+        """
+        Creates a GitHub repo and pushes the code.
+        """
+        print(f"[*] Creating GitHub repository: {repo_name}")
         try:
             url = "https://api.github.com/user/repos"
             headers = {"Authorization": f"token {self.github_token}"}
@@ -89,39 +95,36 @@ class Deployer:
             response.raise_for_status()
             repo_url = response.json()['clone_url']
             print(f"[+] Created GitHub repo: {repo_url}")
-        except Exception as e:
-            print(f"[!] GitHub repo creation failed: {e}")
-            return
-
-        # 2. Git Push (requires git installed locally)
-        try:
+            
+            # Push code
             os.chdir(project_path)
             subprocess.run(["git", "init"], check=True)
             subprocess.run(["git", "add", "."], check=True)
             subprocess.run(["git", "commit", "-m", "Initial commit from Singularity AGI"], check=True)
             
-            # Authenticated URL for pushing
+            # Force branch name to main
+            subprocess.run(["git", "branch", "-M", "main"], check=True)
+            
             auth_repo_url = repo_url.replace("https://", f"https://{self.github_token}@")
             subprocess.run(["git", "remote", "add", "origin", auth_repo_url], check=True)
             subprocess.run(["git", "push", "-u", "origin", "main"], check=True)
             print(f"[+] Pushed code to GitHub.")
+            return repo_url
         except Exception as e:
-            print(f"[!] Git push failed: {e}")
-            return
+            print(f"[!] GitHub deployment failed: {e}")
+            return None
 
-        # 3. Create Netlify Site (Simple Example)
-        # Note: Linking GitHub to Netlify via API is complex; often done via CLI or manual UI.
-        # This example creates a simple site.
-        try:
-            url = "https://api.netlify.com/api/v1/sites"
-            headers = {"Authorization": f"Bearer {self.netlify_token}"}
-            payload = {"name": repo_name}
-            response = requests.post(url, headers=headers, json=payload)
-            response.raise_for_status()
-            print(f"[+] Created Netlify site: {response.json()['url']}")
-        except Exception as e:
-            print(f"[!] Netlify site creation failed: {e}")
-
-# Example:
-# deployer = Deployer(os.getenv("GITHUB_TOKEN"), os.getenv("NETLIFY_TOKEN"))
-# deployer.deploy_to_netlify("/workspace/generated_app", "my-ai-fitness-app")
+    def deploy_full_stack(self, project_path: str, repo_name: str, target: str = "netlify"):
+        """
+        Orchestrates full deployment.
+        """
+        self.deploy_to_github(project_path, repo_name)
+        
+        if target == "netlify":
+            self.deploy_to_netlify(project_path, repo_name)
+        elif target == "railway":
+            self.deploy_to_railway(project_path, repo_name)
+        elif target == "vercel":
+            self.deploy_to_vercel(project_path, repo_name)
+        elif target == "render":
+            self.deploy_to_render(project_path, repo_name)

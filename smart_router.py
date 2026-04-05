@@ -6,16 +6,10 @@ from typing import List, Dict, Any, Optional
 class SmartRouter:
     """
     Singularity AGI Smart Router (2026 Edition)
-    Rotates between OpenRouter, Groq, and Gemini 3.1 based on rate limits.
     """
     
     def __init__(self, openrouter_key: str, groq_key: str, gemini_key: str):
-        self.keys = {
-            "openrouter": openrouter_key,
-            "groq": groq_key,
-            "gemini": gemini_key
-        }
-        # Local cache for rate limit status (Requests Per Day, Requests Per Minute)
+        self.keys = {"openrouter": openrouter_key, "groq": groq_key, "gemini": gemini_key}
         self.status = {
             "gemini": {"rpd": 250, "rpm": 20, "last_reset": time.time()},
             "groq": {"rpd": 1000, "rpm": 30, "last_reset": time.time()},
@@ -23,95 +17,66 @@ class SmartRouter:
         }
 
     def _get_best_provider(self, task_type: str) -> str:
-        """
-        Priority Logic:
-        - Coding/Architecture -> Gemini 3.1 (High Context)
-        - Fast Generation -> Groq (Llama 4 Scout)
-        - Specialized/Fallback -> OpenRouter (Qwen3 Coder)
-        """
-        if task_type == "architecture" and self.status["gemini"]["rpd"] > 0:
-            return "gemini"
+        # For architecture, prefer Gemini (High Context) or high-end Groq
+        if task_type == "architecture":
+            if self.status["gemini"]["rpd"] > 0: return "gemini"
+            if self.status["groq"]["rpd"] > 0: return "groq"
         
-        if self.status["groq"]["rpd"] > 0:
-            return "groq"
-            
-        if self.status["gemini"]["rpd"] > 0:
-            return "gemini"
-            
-        if self.status["openrouter"]["rpd"] > 0:
-            return "openrouter"
-            
-        raise Exception("All free tiers exhausted. Upgrade to Pro or wait for reset.")
+        if self.status["groq"]["rpd"] > 0: return "groq"
+        if self.status["gemini"]["rpd"] > 0: return "gemini"
+        if self.status["openrouter"]["rpd"] > 0: return "openrouter"
+        raise Exception("All free tiers exhausted.")
 
     def call_llm(self, prompt: str, task_type: str = "general") -> str:
         provider = self._get_best_provider(task_type)
         print(f"[*] Using provider: {provider}")
-        
         try:
-            if provider == "gemini":
-                return self._call_gemini(prompt)
-            elif provider == "groq":
-                return self._call_groq(prompt)
-            elif provider == "openrouter":
-                return self._call_openrouter(prompt)
+            if provider == "gemini": return self._call_gemini(prompt)
+            elif provider == "groq": return self._call_groq(prompt, task_type)
+            elif provider == "openrouter": return self._call_openrouter(prompt)
         except Exception as e:
-            print(f"[!] Error with {provider}: {e}. Retrying with next best...")
-            self.status[provider]["rpd"] = 0 # Temporarily disable
+            print(f"[!] Error with {provider}: {e}")
+            self.status[provider]["rpd"] = 0 
             return self.call_llm(prompt, task_type)
 
     def _call_gemini(self, prompt: str):
-        # Implementation for Google AI Studio API (Gemini 3.1)
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-pro:generateContent?key={self.keys['gemini']}"
+        # Use the most compatible endpoint
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key={self.keys['gemini']}"
         payload = {"contents": [{"parts": [{"text": prompt}]}]}
         response = requests.post(url, json=payload)
-        self._update_limits("gemini", response.headers)
-        return response.json()['candidates'][0]['content']['parts'][0]['text']
+        if response.status_code != 200:
+            # Try fallback to flash if pro fails
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={self.keys['gemini']}"
+            response = requests.post(url, json=payload)
+            if response.status_code != 200:
+                raise Exception(f"HTTP {response.status_code}: {response.text}")
+        
+        data = response.json()
+        return data['candidates'][0]['content']['parts'][0]['text']
 
-    def _call_groq(self, prompt: str):
-        # Implementation for Groq Cloud API (Llama 4 Scout)
+    def _call_groq(self, prompt: str, task_type: str):
+        # Use versatile model for architecture/complex tasks
+        model = "llama-3.3-70b-versatile" if task_type == "architecture" else "llama-3.1-8b-instant"
         url = "https://api.groq.com/openai/v1/chat/completions"
         headers = {"Authorization": f"Bearer {self.keys['groq']}"}
-        payload = {
-            "model": "meta-llama/llama-4-scout-17b-instruct",
-            "messages": [{"role": "user", "content": prompt}]
-        }
+        payload = {"model": model, "messages": [{"role": "user", "content": prompt}]}
         response = requests.post(url, headers=headers, json=payload)
-        self._update_limits("groq", response.headers)
+        if response.status_code != 200: raise Exception(f"HTTP {response.status_code}: {response.text}")
         return response.json()['choices'][0]['message']['content']
 
     def _call_openrouter(self, prompt: str):
-        # Implementation for OpenRouter (Free models)
         url = "https://openrouter.ai/api/v1/chat/completions"
         headers = {
             "Authorization": f"Bearer {self.keys['openrouter']}",
             "HTTP-Referer": "https://singularity-agi.ai",
             "X-Title": "Singularity AGI"
         }
+        # Use a reliable free model that supports coding/reasoning
         payload = {
-            "model": "openrouter/auto:free", # Automatically picks best free model
+            "model": "google/gemini-2.0-flash-001", 
             "messages": [{"role": "user", "content": prompt}],
-            "include_reasoning": True # Enable reasoning for thinking models (DeepSeek R1/Qwen)
+            "max_tokens": 2000
         }
         response = requests.post(url, headers=headers, json=payload)
-        self._update_limits("openrouter", response.headers)
-        
-        data = response.json()
-        content = data['choices'][0]['message']['content']
-        
-        # If the model provides reasoning, log it for the dashboard
-        if 'reasoning' in data['choices'][0]['message']:
-            print(f"[*] AI Reasoning: {data['choices'][0]['message']['reasoning'][:200]}...")
-            
-        return content
-
-    def _update_limits(self, provider: str, headers: Dict[str, str]):
-        """
-        Extract rate limit headers (X-Rate-Limit-Remaining-Requests, etc.)
-        """
-        # Note: Actual header names vary by provider (e.g., x-ratelimit-remaining-requests)
-        # Update self.status[provider]["rpd"] and ["rpm"] here based on headers.
-        pass
-
-# Example Usage:
-# router = SmartRouter(os.getenv("OPENROUTER_KEY"), os.getenv("GROQ_KEY"), os.getenv("GEMINI_KEY"))
-# code = router.call_llm("Build a React landing page for a coffee shop.", task_type="coding")
+        if response.status_code != 200: raise Exception(f"HTTP {response.status_code}: {response.text}")
+        return response.json()['choices'][0]['message']['content']

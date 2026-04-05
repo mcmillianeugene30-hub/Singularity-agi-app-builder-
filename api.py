@@ -193,15 +193,18 @@ async def websocket_endpoint(websocket: WebSocket):
             await log_to_db("[+] README.md and documentation generated.")
 
         # 11. Phase 8: Deployment
-        await log_to_db(f"[*] Deploying to {deploy_target}...")
+        await log_to_db(f"[*] Deploying to GitHub and {deploy_target}...")
+        
+        # Always deploy to GitHub first
+        github_url = deployer.deploy_to_github(project_path, project_name)
+        
         deploy_url = ""
         if deploy_target == "railway":
             deployer.deploy_to_railway(project_path, project_name)
             deploy_url = f"https://{project_name}.up.railway.app"
-        elif deploy_target == "render":
-            deployer.deploy_to_render(project_path, project_name)
-            # URL will depend on Render's auto-generated slug
-            deploy_url = f"https://{project_name}.onrender.com"
+        elif deploy_target == "vercel":
+            deployer.deploy_to_vercel(project_path, project_name)
+            deploy_url = f"https://{project_name}.vercel.app"
         else:
             deployer.deploy_to_netlify(project_path, project_name)
             deploy_url = f"https://{project_name}.netlify.app"
@@ -209,8 +212,10 @@ async def websocket_endpoint(websocket: WebSocket):
         if supabase and project_id:
             supabase.table("projects").update({
                 "status": "live",
-                "deploy_url": deploy_url
+                "deploy_url": deploy_url,
+                "github_url": github_url
             }).eq("id", project_id).execute()
+
 
         await log_to_db(f"[SUCCESS] App '{project_name}' is live at {deploy_url}", "success")
         await websocket.close()
