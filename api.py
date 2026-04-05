@@ -18,8 +18,8 @@ from db_manager import DatabaseManager
 from migration_engine import MigrationEngine
 
 # 1. Initialize Supabase Platform Database (https://agi-app-builder.netlify.app/)
-PLATFORM_URL = os.getenv("SUPABASE_URL")
-PLATFORM_KEY = os.getenv("SUPABASE_SERVICE_KEY")
+PLATFORM_URL = os.getenv("SUPABASE_URL") or os.getenv("NEXT_PUBLIC_SUPABASE_URL")
+PLATFORM_KEY = os.getenv("SUPABASE_SERVICE_KEY") or os.getenv("SUPABASE_SERVICE_ROLE_KEY")
 
 # Graceful initialization
 supabase = None
@@ -124,7 +124,7 @@ async def websocket_endpoint(websocket: WebSocket):
         deployer = Deployer(
             os.getenv("GITHUB_TOKEN"), 
             os.getenv("NETLIFY_TOKEN") or os.getenv("NETLIFY_API_TOKEN"),
-            os.getenv("RAILWAY_TOKEN"),
+            os.getenv("RAILWAY_TOKEN") or os.getenv("RAIL_TOKEN"),
             os.getenv("VERCEL_TOKEN"),
             os.getenv("RENDER_API_KEY")
         )
