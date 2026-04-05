@@ -6,6 +6,8 @@ from coder import Coder
 from healer import Healer
 from deployer import Deployer
 from docs_generator import DocsGenerator
+from db_manager import DatabaseManager
+from migration_engine import MigrationEngine
 
 def main():
     parser = argparse.ArgumentParser(description="Singularity AGI Full-Stack AI App Builder")
@@ -13,6 +15,7 @@ def main():
     parser.add_argument("--deploy", action="store_true", help="Automatically deploy to GitHub and Netlify")
     parser.add_argument("--heal", action="store_true", help="Run self-healing build phase")
     parser.add_argument("--docs", action="store_true", help="Generate autonomous documentation")
+    parser.add_argument("--db", action="store_true", help="Automate database setup (Supabase/Neon)")
     args = parser.parse_args()
 
     # 1. Initialize API Keys
@@ -21,6 +24,7 @@ def main():
     GEMINI_KEY = os.getenv("GEMINI_API_KEY")
     GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
     NET_LIFE_TOKEN = os.getenv("NETLIFY_TOKEN")
+    NEON_API_KEY = os.getenv("NEON_API_KEY")
 
     if not all([OPENROUTER_KEY, GROQ_KEY, GEMINI_KEY]):
         print("[!] Missing AI API Keys. Check your .env file.")
@@ -33,6 +37,7 @@ def main():
     healer = Healer(router)
     deployer = Deployer(GITHUB_TOKEN, NET_LIFE_TOKEN)
     docs_gen = DocsGenerator(router)
+    db_manager = DatabaseManager(NEON_API_KEY)
 
     # 3. Phase 1: Planning
     print(f"[*] Planning your app: '{args.prompt}'...")
@@ -46,6 +51,16 @@ def main():
     project_name = blueprint.get('project_name', 'singularity-app')
     project_path = os.path.join(os.getcwd(), "output", project_name)
     coder.build_project(blueprint, base_dir=project_path)
+
+    # 5. Phase 3: Database Orchestration (Optional)
+    if args.db:
+        print("[*] Starting database orchestration...")
+        migrator = MigrationEngine(project_path)
+        sql_schema = blueprint.get("database_schema")
+        if sql_schema:
+            migrator.generate_migration(sql_schema)
+            # Execute schema...
+            pass
 
     # 5. Phase 3: Self-Healing (Optional)
     if args.heal:
