@@ -78,17 +78,17 @@ python -m pip install --upgrade pip setuptools wheel && python -m pip install -r
 ```
 This ensures the environment uses prebuilt binary wheels and skips the Rust compilation step.
 
-### Running the Frontend Dashboard:
+### Running the Frontend Dashboard (Vercel):
 1.  Navigate to the `dashboard/` directory.
-2.  Install Node dependencies:
+2.  Install dependencies and start the dev server:
     ```bash
     npm install
-    ```
-3.  Start the development server:
-    ```bash
     npm run dev
     ```
-    Open `http://localhost:3000` to access your Singularity AGI Dashboard.
+3.  **Deploy to Vercel**:
+    - Connect your GitHub repository to [Vercel](https://vercel.com).
+    - Set the **Root Directory** to `dashboard`.
+    - Add the environment variable: `NEXT_PUBLIC_API_URL` (pointing to your Render backend).
 
 ---
 
