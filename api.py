@@ -55,6 +55,25 @@ class BuildRequest(BaseModel):
     refine: bool = True
     lint: bool = True
 
+class RateRequest(BaseModel):
+    project_id: str
+    rating: int
+    feedback: str = ""
+
+@app.post("/rate")
+async def rate_project(request: RateRequest):
+    """
+    Feedback Integration: Users rate generated apps.
+    """
+    try:
+        supabase.table("projects").update({
+            "rating": request.rating,
+            "feedback": request.feedback
+        }).eq("id", request.project_id).execute()
+        return {"status": "success", "message": "Feedback recorded."}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.get("/projects")
 async def get_all_projects():
     """Fetch all projects from the platform database."""

@@ -11,6 +11,8 @@ CREATE TABLE IF NOT EXISTS projects (
     deploy_url TEXT,
     deploy_platform TEXT DEFAULT 'netlify',
     status TEXT DEFAULT 'pending', -- pending, building, healing, live, failed
+    rating INTEGER CHECK (rating >= 1 AND rating <= 5),
+    feedback TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );

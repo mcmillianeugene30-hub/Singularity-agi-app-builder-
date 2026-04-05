@@ -25,10 +25,11 @@ class Architect:
 
         print("[*] Retrieving successful patterns from Supabase...")
         try:
-            # We use a simple keyword search for similar prompts
-            # In a real app, this would use pgvector or semantic search
+            # We filter by 'live' status AND rating >= 4 for high-quality patterns
             keywords = user_prompt.split()[:5]
-            query = self.supabase.table("projects").select("prompt, blueprint").eq("status", "live")
+            query = self.supabase.table("projects").select("prompt, blueprint") \
+                .eq("status", "live") \
+                .gte("rating", 4)
             
             for word in keywords:
                 query = query.ilike("prompt", f"%{word}%")
