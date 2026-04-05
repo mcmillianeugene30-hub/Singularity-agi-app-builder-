@@ -91,7 +91,32 @@ This ensures the environment uses prebuilt binary wheels and skips the Rust comp
 
 ---
 
-## 🧠 6. How It Works (The Singularity Pipeline)
+## 🧠 8. Advanced AGI & Singularity Features (2026 Edition)
+
+Your builder now includes cutting-edge features for high-fidelity app generation:
+
+### **Autonomous Capabilities:**
+- **Self-Refining Code**: Proactively optimizes code for performance and best practices.
+- **Auto-Bug Detection**: Security scanning and syntax checking before deployment.
+- **Continuous Learning**: Learns from successful past patterns in your database.
+
+### **Advanced AI:**
+- **Code Reasoning**: Explains *why* architectural decisions were made.
+- **Multi-Modal Generation**: Generates UI mockups and Mermaid.js architecture diagrams.
+- **Predictive Suggestions**: Suggests features you might have missed.
+
+### **Ops & Safety:**
+- **Auto-Rollback**: Automatically reverts to the last working version if a build or deploy fails.
+- **Live Monitoring**: Real-time health, latency, and database stats.
+- **Plugin System**: Extend the AGI with custom agents and community templates.
+
+---
+
+## 🛠️ 9. Advanced Usage (CLI)
+
+```bash
+python main.py --prompt "A high-frequency trading dashboard" --lint --refine --reason --multimodal --db --heal --deploy
+```
 
 1.  **Smart Rotation (`smart_router.py`)**: Rotates between providers to bypass free-tier rate limits.
 2.  **Architect Phase (`architect.py`)**: Decomposes your prompt into a full project plan (JSON).

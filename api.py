@@ -12,6 +12,10 @@ from deployer import Deployer
 from docs_generator import DocsGenerator
 from refiner import Refiner
 from linter import Linter
+from reasoning_engine import ReasoningEngine
+from multimodal import MultiModalAgent
+from rollback import RollbackManager
+from plugin_manager import PluginManager
 from supabase import create_client, Client
 from monitor import Monitor
 from db_manager import DatabaseManager
@@ -21,6 +25,10 @@ from migration_engine import MigrationEngine
 PLATFORM_URL = os.getenv("SUPABASE_URL")
 PLATFORM_KEY = os.getenv("SUPABASE_SERVICE_KEY")
 supabase: Client = create_client(PLATFORM_URL, PLATFORM_KEY)
+
+# 1. Initialize Advanced AI Modules
+reasoning_engine = ReasoningEngine(SmartRouter(os.getenv("OPENROUTER_API_KEY"), os.getenv("GROQ_API_KEY"), os.getenv("GEMINI_API_KEY")))
+multimodal_agent = MultiModalAgent(SmartRouter(os.getenv("OPENROUTER_API_KEY"), os.getenv("GROQ_API_KEY"), os.getenv("GEMINI_API_KEY")))
 
 app = FastAPI(title="Singularity AGI API")
 monitor = Monitor()
@@ -71,6 +79,8 @@ async def websocket_endpoint(websocket: WebSocket):
     docs_flag = request_data.get("docs", True)
     refine_flag = request_data.get("refine", True)
     lint_flag = request_data.get("lint", True)
+    reason_flag = request_data.get("reason", True) # Advanced: Reasoning Engine
+    multimodal_flag = request_data.get("multimodal", True) # Advanced: Multi-Modal
     
     # 2. Register Project in Platform Database
     project_entry = supabase.table("projects").insert({
@@ -120,21 +130,31 @@ async def websocket_endpoint(websocket: WebSocket):
         await log_to_db(f"[*] Planning your app ({deploy_target})...")
         blueprint = architect.plan_project(prompt, deploy_target=deploy_target)
         
-        if "error" in blueprint:
-            await log_to_db(f"[!] Planning failed: {blueprint['error']}", "error")
-            supabase.table("projects").update({"status": "failed"}).eq("id", project_id).execute()
-            await websocket.close()
-            return
-        
-        project_name = blueprint.get('project_name', 'singularity-app')
-        await log_to_db(f"[+] Project blueprint generated: {project_name}")
-        supabase.table("projects").update({"name": project_name, "blueprint": blueprint}).eq("id", project_id).execute()
+        # 5. Advanced: Code Reasoning & Suggestions (New)
+        if reason_flag:
+            await log_to_db("[*] Generating architectural reasoning and suggestions...")
+            explanation = reasoning_engine.explain_blueprint(prompt, blueprint)
+            suggestions = reasoning_engine.suggest_features(prompt, blueprint)
+            await websocket.send_text(json.dumps({"type": "reasoning", "explanation": explanation, "suggestions": suggestions}))
+            await log_to_db(f"[+] Reasoning complete. Suggestions generated.")
 
-        # 5. Phase 2: Building
+        # 6. Advanced: Multi-Modal Generation (New)
+        if multimodal_flag:
+            await log_to_db("[*] Generating UI mockup and architecture diagram...")
+            mockup_url = multimodal_agent.generate_ui_mockup(blueprint.get('project_name', 'App'), prompt)
+            diagram_code = multimodal_agent.generate_architecture_diagram(blueprint)
+            await websocket.send_text(json.dumps({"type": "multimodal", "mockup": mockup_url, "diagram": diagram_code}))
+            await log_to_db("[+] Multi-modal assets generated.")
+
+        # 7. Phase 2: Building
         project_path = os.path.join(os.getcwd(), "output", project_name)
         migrator = MigrationEngine(project_path)
         
         await log_to_db(f"[*] Starting multi-agent build for: {project_name}")
+        # Initialize Rollback Manager for safety (New)
+        rollback_mgr = RollbackManager(project_path)
+        rollback_mgr.snapshot_project("initial_build")
+        
         coder.build_project(blueprint, base_dir=project_path)
         await log_to_db(f"[+] Multi-agent build complete.")
 
