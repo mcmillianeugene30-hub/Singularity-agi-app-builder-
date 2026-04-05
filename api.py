@@ -22,6 +22,19 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.get("/")
+async def root():
+    """Root endpoint with API information"""
+    return {
+        "message": "Singularity AGI API",
+        "version": "1.0.0",
+        "endpoints": {
+            "health": "/health",
+            "websocket": "/ws/build",
+            "docs": "/docs"
+        }
+    }
+
 @app.get("/health")
 async def health_check():
     """Health check endpoint for Render"""
