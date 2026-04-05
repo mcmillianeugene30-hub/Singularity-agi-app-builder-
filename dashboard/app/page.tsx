@@ -10,19 +10,33 @@ export default function SingularityDashboard() {
     groq: "Active",
     openrouter: "Active",
   });
-  const [logs, setLogs] = useState<string[]>([]);
-  const [isBuilding, setIsBuilding] = useState(false);
+  const [deployTarget, setDeployTarget] = useState("netlify");
+  const [monitorStatus, setMonitorStatus] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchMonitor = async () => {
+      try {
+        const res = await fetch("http://localhost:8000/monitor");
+        const data = await res.json();
+        setMonitorStatus(data);
+      } catch (err) {
+        console.error("Failed to fetch monitor status");
+      }
+    };
+    fetchMonitor();
+    const interval = setInterval(fetchMonitor, 10000);
+    return () => clearInterval(interval);
+  }, []);
 
   const startBuild = async () => {
     setIsBuilding(true);
     setLogs(["[*] Initializing WebSocket connection..."]);
     
-    // Connect to WebSocket server (assuming localhost:8000)
     const socket = new WebSocket("ws://localhost:8000/ws/build");
     
     socket.onopen = () => {
-        socket.send(JSON.stringify({ prompt, deploy: true, heal: true }));
-        setLogs(prev => [...prev, "[+] WebSocket connected. Sending build request..."]);
+        socket.send(JSON.stringify({ prompt, deploy: deployTarget, heal: true, docs: true }));
+        setLogs(prev => [...prev, `[+] Connected. Starting build for ${deployTarget}...`]);
     };
     
     socket.onmessage = (event) => {
@@ -79,7 +93,18 @@ export default function SingularityDashboard() {
               onChange={(e) => setPrompt(e.target.value)}
             />
             <div className="flex justify-between items-center">
-              <p className="text-sm text-slate-500 italic">Singularity will architect, code, heal, and deploy your app automatically.</p>
+              <div className="flex items-center gap-4">
+                <select 
+                  value={deployTarget}
+                  onChange={(e) => setDeployTarget(e.target.value)}
+                  className="bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-sm text-slate-300 outline-none focus:ring-1 focus:ring-indigo-500"
+                >
+                  <option value="netlify">Netlify (Serverless)</option>
+                  <option value="railway">Railway (Full-stack)</option>
+                  <option value="fly">Fly.io (Persistent)</option>
+                </select>
+                <p className="text-xs text-slate-500 italic">Target: {deployTarget}</p>
+              </div>
               <button 
                 onClick={startBuild}
                 disabled={isBuilding || !prompt}
@@ -89,6 +114,34 @@ export default function SingularityDashboard() {
               >
                 {isBuilding ? 'Building...' : 'Launch App'} <Play className="w-4 h-4" />
               </button>
+            </div>
+          </section>
+
+          {/* Monitoring Dashboard */}
+          <section className="bg-slate-900/50 border border-slate-800 rounded-2xl p-6 space-y-4">
+            <h2 className="text-lg font-semibold flex items-center gap-2">
+              <Cloud className="w-5 h-5 text-indigo-500" /> Live Deployment Health
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {monitorStatus.length === 0 ? (
+                <p className="text-sm text-slate-600 col-span-2">No apps monitored yet.</p>
+              ) : (
+                monitorStatus.map((app, i) => (
+                  <div key={i} className="p-4 bg-slate-950 border border-slate-800 rounded-xl flex flex-col gap-1">
+                    <div className="flex justify-between items-center">
+                      <span className="font-bold text-indigo-400">{app.name}</span>
+                      <span className={`text-xs px-2 py-0.5 rounded-full ${app.status === 'Healthy' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
+                        {app.status}
+                      </span>
+                    </div>
+                    <a href={app.url} target="_blank" className="text-xs text-slate-500 truncate hover:text-indigo-400 transition-colors">{app.url}</a>
+                    <div className="flex justify-between items-center mt-2 text-[10px] text-slate-600 font-mono">
+                      <span>LATENCY: {app.latency}</span>
+                      <span>LAST CHECK: {app.last_check}</span>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </section>
 

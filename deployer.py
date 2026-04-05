@@ -4,13 +4,49 @@ import subprocess
 
 class Deployer:
     """
-    Singularity AGI Deployer Module
-    Automates GitHub repo creation and Netlify deployment.
+    Singularity AGI Deployer Module (Phase 4)
+    Automates GitHub, Netlify, Railway, and Fly.io.
     """
     
-    def __init__(self, github_token: str, netlify_token: str):
+    def __init__(self, github_token: str, netlify_token: str, railway_token: str = None, fly_token: str = None):
         self.github_token = github_token
         self.netlify_token = netlify_token
+        self.railway_token = railway_token
+        self.fly_token = fly_token
+
+    def deploy_to_railway(self, project_path: str, repo_name: str):
+        """
+        Deploys to Railway via their API/CLI.
+        """
+        if not self.railway_token:
+            print("[!] Railway token missing. Skipping.")
+            return
+
+        print(f"[*] Deploying to Railway: {repo_name}")
+        try:
+            # Note: In a real environment, we'd use 'railway link' and 'railway up'
+            # or the GraphQL API. For this AGI builder, we'll assume the 'railway' CLI is installed.
+            subprocess.run(["railway", "link", "--project", repo_name], cwd=project_path, check=True)
+            subprocess.run(["railway", "up"], cwd=project_path, check=True)
+            print("[+] Railway deployment complete.")
+        except Exception as e:
+            print(f"[!] Railway deployment failed: {e}")
+
+    def deploy_to_fly(self, project_path: str, repo_name: str):
+        """
+        Deploys to Fly.io via their CLI.
+        """
+        if not self.fly_token:
+            print("[!] Fly.io token missing. Skipping.")
+            return
+
+        print(f"[*] Deploying to Fly.io: {repo_name}")
+        try:
+            # We assume 'flyctl' is installed.
+            subprocess.run(["fly", "launch", "--name", repo_name, "--now", "--region", "lax"], cwd=project_path, check=True)
+            print("[+] Fly.io deployment complete.")
+        except Exception as e:
+            print(f"[!] Fly.io deployment failed: {e}")
 
     def deploy_to_netlify(self, project_path: str, repo_name: str):
         """

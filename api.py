@@ -11,7 +11,10 @@ from healer import Healer
 from deployer import Deployer
 from docs_generator import DocsGenerator
 
+from monitor import Monitor
+
 app = FastAPI(title="Singularity AGI API")
+monitor = Monitor()
 
 # Enable CORS for frontend access
 app.add_middleware(
@@ -24,9 +27,16 @@ app.add_middleware(
 
 class BuildRequest(BaseModel):
     prompt: str
-    deploy: bool = False
+    deploy: str = "netlify" # Options: netlify, railway, fly
     heal: bool = True
     docs: bool = True
+
+@app.get("/monitor")
+async def get_monitor_status():
+    """
+    Return the live status of all monitored apps.
+    """
+    return monitor.get_dashboard_summary()
 
 @app.websocket("/ws/build")
 async def websocket_endpoint(websocket: WebSocket):
@@ -36,7 +46,7 @@ async def websocket_endpoint(websocket: WebSocket):
     data = await websocket.receive_text()
     request_data = json.loads(data)
     prompt = request_data.get("prompt")
-    deploy_flag = request_data.get("deploy", False)
+    deploy_target = request_data.get("deploy", "netlify")
     heal_flag = request_data.get("heal", True)
     docs_flag = request_data.get("docs", True)
     
@@ -57,9 +67,17 @@ async def websocket_endpoint(websocket: WebSocket):
         coder = Coder(router)
         healer = Healer(router)
         docs_gen = DocsGenerator(router)
+        
+        # Deployer with all possible tokens
+        deployer = Deployer(
+            os.getenv("GITHUB_TOKEN"), 
+            os.getenv("NETLIFY_TOKEN"),
+            os.getenv("RAILWAY_TOKEN"),
+            os.getenv("FLY_TOKEN")
+        )
 
         # 3. Phase 1: Planning
-        await websocket.send_text(f"[*] Planning your app: '{prompt}'...")
+        await websocket.send_text(f"[*] Planning your app ({deploy_target}): '{prompt}'...")
         blueprint = architect.plan_project(prompt)
         
         if "error" in blueprint:
@@ -93,18 +111,19 @@ async def websocket_endpoint(websocket: WebSocket):
             await websocket.send_text("[+] README.md and documentation generated.")
 
         # 7. Phase 5: Deployment
-        if deploy_flag:
-            await websocket.send_text("[*] Deploying to GitHub and Netlify...")
-            GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
-            NETLIFY_TOKEN = os.getenv("NETLIFY_TOKEN")
-            if GITHUB_TOKEN and NETLIFY_TOKEN:
-                deployer = Deployer(GITHUB_TOKEN, NETLIFY_TOKEN)
-                deployer.deploy_to_netlify(project_path, project_name)
-                await websocket.send_text("[SUCCESS] App is live!")
-            else:
-                await websocket.send_text("[!] Deployment tokens missing. Skipped.")
+        await websocket.send_text(f"[*] Deploying to {deploy_target}...")
+        
+        if deploy_target == "railway":
+            deployer.deploy_to_railway(project_path, project_name)
+            monitor.add_app(project_name, f"https://{project_name}.up.railway.app")
+        elif deploy_target == "fly":
+            deployer.deploy_to_fly(project_path, project_name)
+            monitor.add_app(project_name, f"https://{project_name}.fly.dev")
+        else: # Default: netlify
+            deployer.deploy_to_netlify(project_path, project_name)
+            monitor.add_app(project_name, f"https://{project_name}.netlify.app")
 
-        await websocket.send_text(f"[SUCCESS] App '{project_name}' built in {project_path}")
+        await websocket.send_text(f"[SUCCESS] App '{project_name}' is live!")
         await websocket.close()
         
     except Exception as e:

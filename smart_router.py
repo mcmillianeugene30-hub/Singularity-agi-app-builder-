@@ -82,14 +82,27 @@ class SmartRouter:
     def _call_openrouter(self, prompt: str):
         # Implementation for OpenRouter (Free models)
         url = "https://openrouter.ai/api/v1/chat/completions"
-        headers = {"Authorization": f"Bearer {self.keys['openrouter']}"}
+        headers = {
+            "Authorization": f"Bearer {self.keys['openrouter']}",
+            "HTTP-Referer": "https://singularity-agi.ai",
+            "X-Title": "Singularity AGI"
+        }
         payload = {
-            "model": "google/gemma-3-12b-it:free",
-            "messages": [{"role": "user", "content": prompt}]
+            "model": "openrouter/auto:free", # Automatically picks best free model
+            "messages": [{"role": "user", "content": prompt}],
+            "include_reasoning": True # Enable reasoning for thinking models (DeepSeek R1/Qwen)
         }
         response = requests.post(url, headers=headers, json=payload)
         self._update_limits("openrouter", response.headers)
-        return response.json()['choices'][0]['message']['content']
+        
+        data = response.json()
+        content = data['choices'][0]['message']['content']
+        
+        # If the model provides reasoning, log it for the dashboard
+        if 'reasoning' in data['choices'][0]['message']:
+            print(f"[*] AI Reasoning: {data['choices'][0]['message']['reasoning'][:200]}...")
+            
+        return content
 
     def _update_limits(self, provider: str, headers: Dict[str, str]):
         """
