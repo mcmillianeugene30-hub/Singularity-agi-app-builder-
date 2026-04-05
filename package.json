@@ -1,0 +1,7 @@
+{
+  "name": "singularity-agi-root",
+  "private": true,
+  "workspaces": [
+    "dashboard"
+  ]
+}
