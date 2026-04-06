@@ -67,6 +67,20 @@ async def get_monitor_status():
     """Return the live status of all monitored apps."""
     return monitor.get_dashboard_summary()
 
+def get_all_keys(prefix: str) -> List[str]:
+    keys = []
+    main_key = os.getenv(prefix)
+    if main_key:
+        keys.append(main_key)
+    i = 1
+    while True:
+        key = os.getenv(f"{prefix}_{i}")
+        if not key:
+            break
+        keys.append(key)
+        i += 1
+    return keys
+
 @app.websocket("/ws/build")
 async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
@@ -102,18 +116,18 @@ async def websocket_endpoint(websocket: WebSocket):
             }).execute()
 
     # 1. Setup Keys
-    OPENROUTER_KEY = os.getenv("OPENROUTER_API_KEY")
-    GROQ_KEY = os.getenv("GROQ_API_KEY")
-    GEMINI_KEY = os.getenv("GEMINI_API_KEY")
+    OPENROUTER_KEYS = get_all_keys("OPENROUTER_API_KEY")
+    GROQ_KEYS = get_all_keys("GROQ_API_KEY")
+    GEMINI_KEYS = get_all_keys("GEMINI_API_KEY")
     
-    if not all([OPENROUTER_KEY, GROQ_KEY, GEMINI_KEY]):
+    if not (OPENROUTER_KEYS and GROQ_KEYS and GEMINI_KEYS):
         await log_to_db("[!] Missing AI API Keys. Build halted.", "error")
         await websocket.close()
         return
 
     try:
         # 3. Initialize Modules
-        router = SmartRouter(OPENROUTER_KEY, GROQ_KEY, GEMINI_KEY)
+        router = SmartRouter(OPENROUTER_KEYS, GROQ_KEYS, GEMINI_KEYS)
         architect = Architect(router, supabase_client=supabase)
         coder = Coder(router)
         healer = Healer(router)

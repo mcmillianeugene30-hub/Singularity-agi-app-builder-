@@ -1,5 +1,6 @@
 import os
 import argparse
+from dotenv import load_dotenv
 from smart_router import SmartRouter
 from architect import Architect
 from coder import Coder
@@ -16,7 +17,22 @@ from rollback import RollbackManager
 from plugin_manager import PluginManager
 from supabase import create_client, Client
 
+def get_all_keys(prefix: str) -> List[str]:
+    keys = []
+    main_key = os.getenv(prefix)
+    if main_key:
+        keys.append(main_key)
+    i = 1
+    while True:
+        key = os.getenv(f"{prefix}_{i}")
+        if not key:
+            break
+        keys.append(key)
+        i += 1
+    return keys
+
 def main():
+    load_dotenv() # Load variables from .env
     parser = argparse.ArgumentParser(description="Singularity AGI Full-Stack AI App Builder")
     parser.add_argument("--prompt", type=str, required=True, help="Describe the app you want to build")
     parser.add_argument("--deploy", action="store_true", help="Automatically deploy to GitHub and Netlify")
@@ -30,16 +46,16 @@ def main():
     args = parser.parse_args()
 
     # 1. Initialize API Keys
-    OPENROUTER_KEY = os.getenv("OPENROUTER_API_KEY")
-    GROQ_KEY = os.getenv("GROQ_API_KEY")
-    GEMINI_KEY = os.getenv("GEMINI_API_KEY")
+    OPENROUTER_KEYS = get_all_keys("OPENROUTER_API_KEY")
+    GROQ_KEYS = get_all_keys("GROQ_API_KEY")
+    GEMINI_KEYS = get_all_keys("GEMINI_API_KEY")
     GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
     NET_LIFE_TOKEN = os.getenv("NETLIFY_TOKEN")
     NEON_API_KEY = os.getenv("NEON_API_KEY")
     PLATFORM_URL = os.getenv("SUPABASE_URL")
     PLATFORM_KEY = os.getenv("SUPABASE_SERVICE_KEY")
 
-    if not all([OPENROUTER_KEY, GROQ_KEY, GEMINI_KEY]):
+    if not (OPENROUTER_KEYS and GROQ_KEYS and GEMINI_KEYS):
         print("[!] Missing AI API Keys. Check your .env file.")
         return
 
@@ -49,7 +65,7 @@ def main():
         supabase = create_client(PLATFORM_URL, PLATFORM_KEY)
 
     # 2. Setup Modules
-    router = SmartRouter(OPENROUTER_KEY, GROQ_KEY, GEMINI_KEY)
+    router = SmartRouter(OPENROUTER_KEYS, GROQ_KEYS, GEMINI_KEYS)
     architect = Architect(router, supabase_client=supabase)
     coder = Coder(router)
     healer = Healer(router)

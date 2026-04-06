@@ -111,9 +111,24 @@ Your builder now includes cutting-edge features for high-fidelity app generation
 - **Live Monitoring**: Real-time health, latency, and database stats.
 - **Plugin System**: Extend the AGI with custom agents and community templates.
 
----
+### **Multi-Key Rotation (New in 2026):**
+To avoid free-tier rate limits, you can now add multiple keys for each provider. The AGI will automatically rotate to the next key if it hits a limit.
+Add them to your `.env` or Render environment like this:
+```env
+# Gemini Keys
+GEMINI_API_KEY=key_1
+GEMINI_API_KEY_1=key_2
+GEMINI_API_KEY_2=key_3
 
-## 🛠️ 9. Advanced Usage (CLI)
+# Groq Keys
+GROQ_API_KEY=key_1
+GROQ_API_KEY_1=key_2
+
+# OpenRouter Keys
+OPENROUTER_API_KEY=key_1
+OPENROUTER_API_KEY_1=key_2
+```
+The system will search for `PREFIX`, `PREFIX_1`, `PREFIX_2`, and so on.
 
 ```bash
 python main.py --prompt "A high-frequency trading dashboard" --lint --refine --reason --multimodal --db --heal --deploy
