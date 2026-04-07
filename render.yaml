@@ -19,10 +19,10 @@ services:
       pip install --upgrade pip setuptools wheel
       pip install -r requirements.txt
 
-    # Start command
-    startCommand: gunicorn api:app --workers $WORKERS --worker-class uvicorn.workers.UvicornWorker --bind 0.0.0.0:$PORT
+    # Start command with production settings
+    startCommand: gunicorn api:app --workers $WORKERS --worker-class uvicorn.workers.UvicornWorker --bind 0.0.0.0:$PORT --timeout 300 --keepalive 5
 
-    # Environment variables (can also be set in Render dashboard)
+    # Environment variables
     envVars:
       # Application Configuration
       - key: PORT
@@ -33,38 +33,89 @@ services:
         value: production
       - key: PYTHONUNBUFFERED
         value: 1
+      - key: LOG_LEVEL
+        value: INFO
 
       # CORS Configuration (Update with your frontend domain)
       - key: ALLOWED_ORIGINS
         value: https://singularity-dashboard.vercel.app
 
-      # AI Provider Keys (Set these in Render dashboard)
+      # ========================================
+      # AI Provider Keys - SET THESE IN RENDER DASHBOARD
+      # ========================================
+      # OpenRouter Keys (supports rotation with multiple keys)
       - key: OPENROUTER_API_KEY
         sync: false
-      - key: GROQ_API_KEY
+      - key: OPENROUTER_API_KEY_1
         sync: false
-      - key: GEMINI_API_KEY
+      - key: OPENROUTER_API_KEY_2
+        sync: false
+      - key: OPENROUTER_API_KEY_3
         sync: false
 
-      # Deployment Tokens (Set these in Render dashboard)
+      # Groq Keys (supports rotation with multiple keys)
+      - key: GROQ_API_KEY
+        sync: false
+      - key: GROQ_API_KEY_1
+        sync: false
+      - key: GROQ_API_KEY_2
+        sync: false
+      - key: GROQ_API_KEY_3
+        sync: false
+
+      # Gemini Keys (supports rotation with multiple keys)
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GEMINI_API_KEY_1
+        sync: false
+      - key: GEMINI_API_KEY_2
+        sync: false
+      - key: GEMINI_API_KEY_3
+        sync: false
+
+      # OpenAI Keys (for future use)
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: OPENAI_API_KEY_1
+        sync: false
+      - key: OPENAI_API_KEY_2
+        sync: false
+
+      # ========================================
+      # Deployment Tokens - SET THESE IN RENDER DASHBOARD
+      # ========================================
       - key: GITHUB_TOKEN
         sync: false
       - key: NETLIFY_TOKEN
+        sync: false
+      - key: NETLIFY_API_KEY
         sync: false
       - key: VERCEL_TOKEN
         sync: false
       - key: RAILWAY_TOKEN
         sync: false
+      - key: RAIL_TOKEN
+        sync: false
       - key: RENDER_API_KEY
         sync: false
 
-      # Database Configuration (Set these in Render dashboard)
+      # ========================================
+      # Database Configuration - SET THESE IN RENDER DASHBOARD
+      # ========================================
       - key: SUPABASE_URL
         sync: false
       - key: SUPABASE_SERVICE_KEY
         sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
       - key: NEON_API_KEY
         sync: false
+
+      # ========================================
+      # Frontend Configuration
+      # ========================================
+      - key: NEXT_PUBLIC_API_URL
+        value: https://singularity-agi-backend.onrender.com
 
     # Health check
     healthCheckPath: /health
