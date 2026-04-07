@@ -1,5 +1,6 @@
 import os
 import argparse
+from typing import List
 from dotenv import load_dotenv
 from smart_router import SmartRouter
 from architect import Architect

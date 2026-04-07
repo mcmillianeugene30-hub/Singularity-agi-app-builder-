@@ -1,6 +1,7 @@
 from fastapi import FastAPI, WebSocket, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from typing import List
 import os
 import json
 import asyncio
@@ -29,7 +30,14 @@ if PLATFORM_URL and PLATFORM_KEY:
     except Exception as e:
         print(f"[!] Supabase initialization failed: {e}")
 
-app = FastAPI(title="Singularity AGI API")
+app = FastAPI(
+    title="Singularity AGI API",
+    description="Production-ready backend for AI-powered app generation",
+    version="1.0.0",
+    docs_url="/docs",
+    redoc_url="/redoc"
+)
+
 monitor = Monitor()
 db_manager = DatabaseManager(
     os.getenv("NEON_API_KEY"),
@@ -37,10 +45,11 @@ db_manager = DatabaseManager(
     os.getenv("SUPABASE_SERVICE_KEY")
 )
 
-# Enable CORS for frontend access
+# Configure CORS for production
+ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "*").split(",")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -53,6 +62,27 @@ class BuildRequest(BaseModel):
     docs: bool = True
     refine: bool = True
     lint: bool = True
+
+@app.get("/")
+async def root():
+    """Root endpoint with API information."""
+    return {
+        "status": "online",
+        "service": "Singularity AGI API",
+        "version": "1.0.0",
+        "endpoints": {
+            "health": "/health",
+            "docs": "/docs",
+            "websocket": "/ws/build",
+            "projects": "/projects",
+            "monitor": "/monitor"
+        }
+    }
+
+@app.get("/health")
+async def health_check():
+    """Health check endpoint for load balancers."""
+    return {"status": "healthy", "service": "singularity-agi-api"}
 
 @app.get("/projects")
 async def get_all_projects():
@@ -243,6 +273,24 @@ async def websocket_endpoint(websocket: WebSocket):
 
 if __name__ == "__main__":
     import uvicorn
-    # Render provides a PORT environment variable
+    # Production-ready server configuration
     port = int(os.environ.get("PORT", 8000))
-    uvicorn.run(app, host="0.0.0.0", port=port)
+    workers = int(os.environ.get("WORKERS", 1))
+
+    # Run with uvicorn for development, gunicorn for production
+    if os.environ.get("ENVIRONMENT") == "production":
+        # In production, use gunicorn with uvicorn workers
+        import subprocess
+        cmd = [
+            "gunicorn",
+            "api:app",
+            "--workers", str(workers),
+            "--worker-class", "uvicorn.workers.UvicornWorker",
+            "--bind", f"0.0.0.0:{port}",
+            "--access-logfile", "-",
+            "--error-logfile", "-",
+            "--log-level", "info"
+        ]
+        subprocess.run(cmd)
+    else:
+        uvicorn.run(app, host="0.0.0.0", port=port, log_level="info")
