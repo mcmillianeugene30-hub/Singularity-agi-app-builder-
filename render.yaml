@@ -1,0 +1,85 @@
+# Render.com Deployment Configuration
+# Production-ready configuration for Singularity AGI backend
+
+services:
+  # Type of service (web, worker, cron, etc.)
+  - type: web
+
+    # Name of the service
+    name: singularity-agi-backend
+
+    # Runtime environment
+    env: python
+
+    # Python version
+    runtime: "3.10"
+
+    # Build configuration
+    buildCommand: |
+      pip install --upgrade pip setuptools wheel
+      pip install -r requirements.txt
+
+    # Start command
+    startCommand: gunicorn api:app --workers $WORKERS --worker-class uvicorn.workers.UvicornWorker --bind 0.0.0.0:$PORT
+
+    # Environment variables (can also be set in Render dashboard)
+    envVars:
+      # Application Configuration
+      - key: PORT
+        value: 8000
+      - key: WORKERS
+        value: 1
+      - key: ENVIRONMENT
+        value: production
+      - key: PYTHONUNBUFFERED
+        value: 1
+
+      # CORS Configuration (Update with your frontend domain)
+      - key: ALLOWED_ORIGINS
+        value: https://singularity-dashboard.vercel.app
+
+      # AI Provider Keys (Set these in Render dashboard)
+      - key: OPENROUTER_API_KEY
+        sync: false
+      - key: GROQ_API_KEY
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+
+      # Deployment Tokens (Set these in Render dashboard)
+      - key: GITHUB_TOKEN
+        sync: false
+      - key: NETLIFY_TOKEN
+        sync: false
+      - key: VERCEL_TOKEN
+        sync: false
+      - key: RAILWAY_TOKEN
+        sync: false
+      - key: RENDER_API_KEY
+        sync: false
+
+      # Database Configuration (Set these in Render dashboard)
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_KEY
+        sync: false
+      - key: NEON_API_KEY
+        sync: false
+
+    # Health check
+    healthCheckPath: /health
+
+    # Auto-deploy on push to main branch
+    branch: main
+
+    # Instance configuration
+    plan: free  # Options: free, starter, standard, pro, etc.
+
+    # Region (select based on your users)
+    region: oregon  # Options: oregon, frankfurt, singapore, etc.
+
+    # Disk storage (if needed)
+    disk:
+      name: data
+      mountPath: /app/data
+      sizeGB: 1
